@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mes annonces Vinted</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Mes annonces <span>Vinted</span></h1>
+  <nav>
+    <button class="actif" id="nav-dash" onclick="aller('dash')">Tableau de bord</button>
+    <button id="nav-nouveau" onclick="aller('nouveau')">Nouvel article</button>
+    <button id="nav-stock" onclick="aller('stock')">Mon stock</button>
+  </nav>
+</header>
+<main>
+
+<!-- TABLEAU DE BORD -->
+<div class="page actif" id="page-dash">
+  <div class="stats">
+    <div class="stat"><small>Articles en vente</small><b id="sNb">0</b></div>
+    <div class="stat"><small>Investi (en stock)</small><b id="sInv">0 €</b></div>
+    <div class="stat"><small>Chiffre d'affaires</small><b id="sVen">0 €</b></div>
+    <div class="stat"><small>Bénéfice</small><b id="sBen" class="vert">0 €</b></div>
+  </div>
+  <div class="graphes">
+    <div class="carte"><h2>Bénéfice par mois</h2><canvas id="gMois"></canvas></div>
+    <div class="carte"><h2>En vente et vendus</h2><canvas id="gStatut"></canvas></div>
+  </div>
+  <div class="carte"><h2>Bénéfice par marque (top 6)</h2><canvas id="gMarque"></canvas></div>
+</div>
+
+<!-- NOUVEL ARTICLE -->
+<div class="page" id="page-nouveau">
+  <div class="carte">
+    <h2>Nouvel article</h2>
+    <div class="ligne">
+      <div><label>Type</label><select id="type"><option>Vêtement</option><option>Chaussures</option></select></div>
+      <div><label>Catégorie (jean, pull, baskets...)</label><input id="cat" placeholder="jean"></div>
+    </div>
+    <div class="ligne">
+      <div><label>Marque</label><input id="marque" placeholder="Levi's"></div>
+      <div><label>Taille</label><input id="taille" placeholder="M ou 42"></div>
+    </div>
+    <div class="ligne">
+      <div><label>Couleur</label><input id="couleur" placeholder="bleu"></div>
+      <div><label>État</label>
+        <select id="etat">
+          <option>Neuf avec étiquette</option><option>Neuf sans étiquette</option>
+          <option selected>Très bon état</option><option>Bon état</option><option>Satisfaisant</option>
+        </select></div>
+    </div>
+    <div class="ligne">
+      <div><label>Prix d'achat (€)</label><input id="achat" type="number" step="0.01" min="0" placeholder="5"></div>
+      <div><label>Marge voulue (2 = prix double)</label><input id="marge" type="number" step="0.1" min="1" value="2"></div>
+    </div>
+    <label>Détails en plus (facultatif)</label>
+    <textarea id="details" rows="2" placeholder="Coupe droite, 100% coton, aucun défaut"></textarea>
+    <label>Photo (facultatif, reste sur ton appareil)</label>
+    <input id="photo" type="file" accept="image/*">
+    <button class="btn" onclick="generer()">Générer l'annonce</button>
+    <button class="btn sec" onclick="reinit()">Vider le formulaire</button>
+
+    <div id="sortie" style="display:none">
+      <div class="resultat" id="outTitre"></div>
+      <button class="btn sec" onclick="copier('outTitre', this)">Copier le titre</button>
+      <div class="resultat" id="outDesc"></div>
+      <button class="btn sec" onclick="copier('outDesc', this)">Copier la description</button>
+      <div class="resultat" id="outPrix"></div>
+      <a id="lienVinted" target="_blank" rel="noopener"><button class="btn">Voir les annonces similaires sur Vinted</button></a>
+      <button class="btn sec" onclick="sauver()">Enregistrer dans mon stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- STOCK -->
+<div class="page" id="page-stock">
+  <div class="carte">
+    <h2>Mon stock</h2>
+    <div class="filtres">
+      <div><label>Recherche</label><input id="fRecherche" placeholder="marque, catégorie, mot du titre..." oninput="afficherStock()"></div>
+      <div><label>Statut</label><select id="fStatut" onchange="afficherStock()"><option value="">Tous</option><option>En vente</option><option>Vendu</option></select></div>
+      <div><label>Type</label><select id="fType" onchange="afficherStock()"><option value="">Tous</option><option>Vêtement</option><option>Chaussures</option></select></div>
+      <div><label>Trier par</label><select id="fTri" onchange="afficherStock()"><option value="recent">Plus récents</option><option value="prixAsc">Prix croissant</option><option value="prixDesc">Prix décroissant</option><option value="marge">Meilleure marge</option></select></div>
+    </div>
+    <div class="compte" id="compte"></div>
+    <div class="grille" id="grille"></div>
+    <button class="btn sec" onclick="exporter()">Télécharger une sauvegarde</button>
+    <button class="btn sec" onclick="document.getElementById('fichier').click()">Restaurer une sauvegarde</button>
+    <input type="file" id="fichier" accept=".json" style="display:none" onchange="importer(event)">
+    <p class="note">Tes données restent uniquement dans ton navigateur, sur cet appareil. Télécharge une sauvegarde de temps en temps.</p>
+  </div>
+</div>
+
+</main>
+<script src="app.js"></script>
+</body>
+</html>
