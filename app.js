@@ -1,7 +1,10 @@
 var CLE = 'vinted-stock-v2';
 var courant = null;
 var photoCourante = '';
+var ETATS = ['Neuf avec étiquette', 'Neuf sans étiquette', 'Très bon état', 'Bon état', 'Satisfaisant'];
+var etatChoisi = 'Très bon état';
 
+/* ---------- Stockage ---------- */
 function lire() { try { return JSON.parse(localStorage.getItem(CLE)) || []; } catch (e) { return []; } }
 function ecrire(d) {
   try { localStorage.setItem(CLE, JSON.stringify(d)); }
@@ -11,12 +14,71 @@ function v(id) { return document.getElementById(id).value.trim(); }
 function majuscule(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function euros(n) { return (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' €'; }
 
+/* ---------- Thème sombre / clair ---------- */
+function themeClair() { return document.documentElement.getAttribute('data-theme') === 'clair'; }
+function basculerTheme() {
+  if (themeClair()) { document.documentElement.removeAttribute('data-theme'); localStorage.setItem('vinted-theme', 'sombre'); }
+  else { document.documentElement.setAttribute('data-theme', 'clair'); localStorage.setItem('vinted-theme', 'clair'); }
+  if (document.getElementById('page-dash').classList.contains('actif')) dessiner();
+}
+
+/* ---------- Menus déroulants personnalisés ---------- */
+var menus = {};
+var FLECHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
+function creerMenu(id, surChoix) {
+  var el = document.getElementById(id), options = el.getAttribute('data-options').split('|');
+  var etat = { valeur: options[0], options: options };
+  menus[id] = etat;
+  el.innerHTML = '<button type="button" class="menu-btn"><span></span>' + FLECHE + '</button><div class="menu-liste"></div>';
+  var btn = el.querySelector('.menu-btn'), liste = el.querySelector('.menu-liste'), texte = btn.querySelector('span');
+  texte.textContent = etat.valeur;
+  options.forEach(function (o) {
+    var d = document.createElement('div'); d.textContent = o;
+    if (o === etat.valeur) d.classList.add('choisi');
+    d.onclick = function () {
+      etat.valeur = o; texte.textContent = o;
+      Array.prototype.forEach.call(liste.children, function (c) { c.classList.toggle('choisi', c === d); });
+      el.classList.remove('ouvert');
+      if (surChoix) surChoix(o);
+    };
+    liste.appendChild(d);
+  });
+  btn.onclick = function (e) {
+    e.stopPropagation();
+    var etaitOuvert = el.classList.contains('ouvert');
+    fermerMenus();
+    if (!etaitOuvert) el.classList.add('ouvert');
+  };
+}
+function fermerMenus() {
+  Array.prototype.forEach.call(document.querySelectorAll('.menu.ouvert'), function (m) { m.classList.remove('ouvert'); });
+}
+document.addEventListener('click', fermerMenus);
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fermerMenus(); });
+function valeurMenu(id) { return menus[id].valeur; }
+
+/* ---------- Pastilles d'état ---------- */
+function creerPastilles() {
+  var zone = document.getElementById('pastilles-etat'); zone.innerHTML = '';
+  ETATS.forEach(function (e) {
+    var b = document.createElement('button'); b.type = 'button';
+    b.className = 'pastille' + (e === etatChoisi ? ' actif' : ''); b.textContent = e;
+    b.onclick = function () {
+      etatChoisi = e;
+      Array.prototype.forEach.call(zone.children, function (c) { c.classList.toggle('actif', c === b); });
+    };
+    zone.appendChild(b);
+  });
+}
+
 /* ---------- Navigation ---------- */
 function aller(nom) {
   ['dash', 'nouveau', 'stock'].forEach(function (p) {
     document.getElementById('page-' + p).classList.toggle('actif', p === nom);
     document.getElementById('nav-' + p).classList.toggle('actif', p === nom);
   });
+  fermerMenus();
   if (nom === 'dash') dessiner();
   if (nom === 'stock') afficherStock();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -49,8 +111,8 @@ document.getElementById('photo').addEventListener('change', function (e) {
 
 /* ---------- Génération de l'annonce ---------- */
 function generer() {
-  var type = v('type'), cat = v('cat'), marque = v('marque'), taille = v('taille'), couleur = v('couleur');
-  var etat = v('etat'), details = v('details');
+  var type = valeurMenu('m-type'), cat = v('cat'), marque = v('marque'), taille = v('taille'), couleur = v('couleur');
+  var etat = etatChoisi, details = v('details');
   var achat = parseFloat(v('achat')), marge = parseFloat(v('marge'));
   if (!cat || !marque || !taille || isNaN(achat) || isNaN(marge)) {
     alert('Remplis au moins : catégorie, marque, taille, prix d\'achat et marge.');
@@ -105,21 +167,21 @@ function reinit() {
   ['cat', 'marque', 'taille', 'couleur', 'achat', 'details', 'photo'].forEach(function (i) { document.getElementById(i).value = ''; });
   document.getElementById('marge').value = 2;
   document.getElementById('sortie').style.display = 'none';
-  courant = null; photoCourante = '';
+  courant = null; photoCourante = ''; etatChoisi = 'Très bon état'; creerPastilles();
 }
 
 /* ---------- Stock : recherche, filtres, tri ---------- */
 function afficherStock() {
   var d = lire();
-  var q = v('fRecherche').toLowerCase(), st = v('fStatut'), ty = v('fType'), tri = v('fTri');
+  var q = v('fRecherche').toLowerCase(), st = valeurMenu('m-statut'), ty = valeurMenu('m-ftype'), tri = valeurMenu('m-tri');
   d = d.filter(function (a) {
     var texte = (a.titre + ' ' + (a.marque || '') + ' ' + (a.cat || '')).toLowerCase();
-    return (!q || texte.indexOf(q) !== -1) && (!st || a.statut === st) && (!ty || a.type === ty);
+    return (!q || texte.indexOf(q) !== -1) && (st === 'Tous' || a.statut === st) && (ty === 'Tous' || a.type === ty);
   });
   d.sort(function (a, b) {
-    if (tri === 'prixAsc') return a.prix - b.prix;
-    if (tri === 'prixDesc') return b.prix - a.prix;
-    if (tri === 'marge') return (b.prix - b.achat) - (a.prix - a.achat);
+    if (tri === 'Prix croissant') return a.prix - b.prix;
+    if (tri === 'Prix décroissant') return b.prix - a.prix;
+    if (tri === 'Meilleure marge') return (b.prix - b.achat) - (a.prix - a.achat);
     return b.id - a.id;
   });
 
@@ -138,7 +200,7 @@ function afficherStock() {
 
     var corps = document.createElement('div'); corps.className = 'corps';
     var badge = document.createElement('span');
-    badge.className = 'badge ' + (a.statut === 'Vendu' ? 'vendu' : 'vente'); badge.textContent = a.statut;
+    badge.className = 'badge' + (a.statut === 'Vendu' ? ' vendu' : ''); badge.textContent = a.statut;
     var titre = document.createElement('div'); titre.className = 'titre'; titre.textContent = a.titre;
     var prix = document.createElement('div'); prix.className = 'prix';
     var b = document.createElement('b'); b.textContent = (a.statut === 'Vendu' ? a.vendu : a.prix) + ' €';
@@ -177,7 +239,7 @@ function supprimer(id) {
   ecrire(lire().filter(function (a) { return a.id !== id; })); afficherStock();
 }
 
-/* ---------- Animation des compteurs ---------- */
+/* ---------- Compteurs animés ---------- */
 function compteur(id, cible, estEuro) {
   var el = document.getElementById(id), debut = null, duree = 900;
   el.classList.toggle('rouge', cible < 0);
@@ -215,21 +277,22 @@ function dessiner() {
       if (c in mois) mois[c] += a.vendu - a.achat;
     }
   });
-  barres('gMois', ordre.map(function (o) { return o.nom; }), ordre.map(function (o) { return mois[o.cle]; }), '#19c3cc');
-  barres('gStatut', ['En vente', 'Vendus'], [enVente, d.length - enVente], '#7c5cff');
+  barres('gMois', ordre.map(function (o) { return o.nom; }), ordre.map(function (o) { return mois[o.cle]; }), ['#6366f1', '#8b5cf6']);
+  barres('gStatut', ['En vente', 'Vendus'], [enVente, d.length - enVente], ['#f59e0b', '#10b981']);
 
   var parMarque = {};
   d.forEach(function (a) { if (a.statut === 'Vendu') { var k = a.marque || 'Sans marque'; parMarque[k] = (parMarque[k] || 0) + (a.vendu - a.achat); } });
   var top = Object.keys(parMarque).sort(function (x, y) { return parMarque[y] - parMarque[x]; }).slice(0, 6);
-  barres('gMarque', top, top.map(function (k) { return parMarque[k]; }), '#2ecc8f');
+  barres('gMarque', top, top.map(function (k) { return parMarque[k]; }), ['#ec4899', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1']);
 }
 
-/* Graphique en barres dessiné à la main, avec animation de montée */
-function barres(id, noms, valeurs, couleur) {
+/* Graphique en barres dessiné à la main : couleurs vives, animé, adapté au thème */
+function barres(id, noms, valeurs, couleurs) {
   var c = document.getElementById(id), r = window.devicePixelRatio || 1;
   var w = c.clientWidth, h = c.clientHeight;
   c.width = w * r; c.height = h * r;
   var x = c.getContext('2d');
+  var texteCouleur = themeClair() ? '#0a0a0a' : '#fafafa', mute = themeClair() ? '#6f6f6f' : '#8c8c8c', trait = themeClair() ? '#e3e3df' : '#262626';
   var debut = null, duree = 800;
 
   function image(t) {
@@ -238,24 +301,27 @@ function barres(id, noms, valeurs, couleur) {
     x.setTransform(r, 0, 0, r, 0, 0); x.clearRect(0, 0, w, h);
 
     if (!noms.length) {
-      x.fillStyle = '#8a94a7'; x.font = '13px system-ui'; x.textAlign = 'center';
+      x.fillStyle = mute; x.font = '13px system-ui'; x.textAlign = 'center';
       x.fillText('Pas encore de données', w / 2, h / 2); return;
     }
     var max = Math.max.apply(null, valeurs.concat([1])), min = Math.min.apply(null, valeurs.concat([0]));
     var haut = 26, bas = 28, zone = h - haut - bas, plage = max - min || 1;
     var zero = haut + zone * (max / plage), pas = w / noms.length, lg = Math.min(46, pas * 0.6);
-    x.strokeStyle = '#283043'; x.beginPath(); x.moveTo(0, zero); x.lineTo(w, zero); x.stroke();
+    x.strokeStyle = trait; x.beginPath(); x.moveTo(0, zero); x.lineTo(w, zero); x.stroke();
 
     noms.forEach(function (nom, i) {
       var val = valeurs[i], bh = Math.abs(val) / plage * zone * e, bx = i * pas + (pas - lg) / 2;
       var by = val >= 0 ? zero - bh : zero;
+      var base = val < 0 ? '#ef4444' : couleurs[i % couleurs.length];
       var degrade = x.createLinearGradient(0, by, 0, by + bh);
-      degrade.addColorStop(0, val < 0 ? '#ef5b5b' : couleur); degrade.addColorStop(1, val < 0 ? '#a83b6a' : couleur + '55');
+      degrade.addColorStop(0, base); degrade.addColorStop(1, base + '66');
       x.fillStyle = degrade;
-      x.fillRect(bx, by, lg, Math.max(bh, val ? 2 : 0));
-      x.fillStyle = '#e8ecf3'; x.font = '12px system-ui'; x.textAlign = 'center';
+      x.beginPath();
+      if (x.roundRect) x.roundRect(bx, by, lg, Math.max(bh, val ? 2 : 0), 6); else x.rect(bx, by, lg, Math.max(bh, val ? 2 : 0));
+      x.fill();
+      x.fillStyle = texteCouleur; x.font = '600 12px system-ui'; x.textAlign = 'center';
       x.fillText(Math.round(val * e * 100) / 100, bx + lg / 2, val >= 0 ? by - 6 : by + bh + 14);
-      x.fillStyle = '#8a94a7'; x.fillText(nom.length > 10 ? nom.slice(0, 9) + '.' : nom, bx + lg / 2, h - 8);
+      x.fillStyle = mute; x.font = '12px system-ui'; x.fillText(nom.length > 10 ? nom.slice(0, 9) + '.' : nom, bx + lg / 2, h - 8);
     });
     if (p < 1) requestAnimationFrame(image);
   }
@@ -280,4 +346,10 @@ function importer(e) {
   r.readAsText(f);
 }
 
+/* ---------- Démarrage ---------- */
+creerMenu('m-type');
+creerMenu('m-statut', afficherStock);
+creerMenu('m-ftype', afficherStock);
+creerMenu('m-tri', afficherStock);
+creerPastilles();
 dessiner();

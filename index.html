@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mes annonces Vinted</title>
 <link rel="stylesheet" href="style.css">
+<script>
+  // Applique le thème enregistré avant l'affichage, pour éviter un flash
+  (function () {
+    var t = localStorage.getItem('vinted-theme');
+    if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'clair' : 'sombre';
+    if (t === 'clair') document.documentElement.setAttribute('data-theme', 'clair');
+  })();
+</script>
 </head>
 <body>
 <header>
@@ -14,6 +22,9 @@
     <button id="nav-nouveau" onclick="aller('nouveau')">Nouvel article</button>
     <button id="nav-stock" onclick="aller('stock')">Mon stock</button>
   </nav>
+  <div class="droite">
+    <button class="theme" id="btnTheme" onclick="basculerTheme()" aria-label="Changer de thème">◐</button>
+  </div>
 </header>
 <main>
 
@@ -37,7 +48,7 @@
   <div class="carte">
     <h2>Nouvel article</h2>
     <div class="ligne">
-      <div><label>Type</label><select id="type"><option>Vêtement</option><option>Chaussures</option></select></div>
+      <div><label>Type</label><div class="menu" id="m-type" data-options="Vêtement|Chaussures"></div></div>
       <div><label>Catégorie (jean, pull, baskets...)</label><input id="cat" placeholder="jean"></div>
     </div>
     <div class="ligne">
@@ -46,20 +57,16 @@
     </div>
     <div class="ligne">
       <div><label>Couleur</label><input id="couleur" placeholder="bleu"></div>
-      <div><label>État</label>
-        <select id="etat">
-          <option>Neuf avec étiquette</option><option>Neuf sans étiquette</option>
-          <option selected>Très bon état</option><option>Bon état</option><option>Satisfaisant</option>
-        </select></div>
-    </div>
-    <div class="ligne">
       <div><label>Prix d'achat (€)</label><input id="achat" type="number" step="0.01" min="0" placeholder="5"></div>
+    </div>
+    <span class="lbl">État</span>
+    <div class="pastilles" id="pastilles-etat"></div>
+    <div class="ligne">
       <div><label>Marge voulue (2 = prix double)</label><input id="marge" type="number" step="0.1" min="1" value="2"></div>
+      <div><label>Photo (facultatif)</label><input id="photo" type="file" accept="image/*"></div>
     </div>
     <label>Détails en plus (facultatif)</label>
     <textarea id="details" rows="2" placeholder="Coupe droite, 100% coton, aucun défaut"></textarea>
-    <label>Photo (facultatif, reste sur ton appareil)</label>
-    <input id="photo" type="file" accept="image/*">
     <button class="btn" onclick="generer()">Générer l'annonce</button>
     <button class="btn sec" onclick="reinit()">Vider le formulaire</button>
 
@@ -81,9 +88,9 @@
     <h2>Mon stock</h2>
     <div class="filtres">
       <div><label>Recherche</label><input id="fRecherche" placeholder="marque, catégorie, mot du titre..." oninput="afficherStock()"></div>
-      <div><label>Statut</label><select id="fStatut" onchange="afficherStock()"><option value="">Tous</option><option>En vente</option><option>Vendu</option></select></div>
-      <div><label>Type</label><select id="fType" onchange="afficherStock()"><option value="">Tous</option><option>Vêtement</option><option>Chaussures</option></select></div>
-      <div><label>Trier par</label><select id="fTri" onchange="afficherStock()"><option value="recent">Plus récents</option><option value="prixAsc">Prix croissant</option><option value="prixDesc">Prix décroissant</option><option value="marge">Meilleure marge</option></select></div>
+      <div><label>Statut</label><div class="menu" id="m-statut" data-options="Tous|En vente|Vendu"></div></div>
+      <div><label>Type</label><div class="menu" id="m-ftype" data-options="Tous|Vêtement|Chaussures"></div></div>
+      <div><label>Trier par</label><div class="menu" id="m-tri" data-options="Plus récents|Prix croissant|Prix décroissant|Meilleure marge"></div></div>
     </div>
     <div class="compte" id="compte"></div>
     <div class="grille" id="grille"></div>
