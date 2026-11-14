@@ -45,5 +45,5 @@ body::before{background:#6366f1;top:-20vmax;left:-15vmax}body::after{background:
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.6s}
 @keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.2)}}@keyframes sh{to{background-position:-200% 0}}
 @keyframes rp{to{transform:scale(4);opacity:0}}@keyframes pop{50%{transform:scale(1.12)}}@keyframes pulse{50%{border-color:var(--m)}}@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}body::before,body::after,.drop,.logo{animation:none!important}.rv{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){html:not([data-anim=on]) *,html:not([data-anim=on]) *::before,html:not([data-anim=on]) *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}html:not([data-anim=on]) body::before,html:not([data-anim=on]) body::after,html:not([data-anim=on]) .drop,html:not([data-anim=on]) .logo{animation:none!important}html:not([data-anim=on]) .rv{opacity:1;transform:none}}
 @media(max-width:760px){.g2,.g3,.sum{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}nav{order:3;width:100%;justify-content:center}.hb{grid-template-columns:80px 1fr 60px}}
