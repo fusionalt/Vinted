@@ -32,6 +32,9 @@
     <div class="card"><h2>Répartition du stock</h2><div id="c-rep"></div></div>
     <div class="card"><h2>Bénéfice par catégorie</h2><div id="c-ren"></div></div>
   </div>
+  <div class="card"><h2>Objectif de bénéfice du mois</h2><div class="row" style="align-items:center"><input id="obj" type="number" min="0" placeholder="ex : 200 (€)" style="max-width:200px"><span class="pr" id="obj-t"></span></div><div style="height:12px;background:var(--s2);border-radius:6px;margin-top:12px;overflow:hidden"><i id="obj-b" style="display:block;height:100%;width:0;background:#10b981;border-radius:6px;transition:width .9s var(--e)"></i></div></div>
+  <div class="g2"><div class="card"><h2>Bénéfice par marque</h2><div id="c-marque"></div></div><div class="card"><h2>Bénéfice par source d'achat</h2><div id="c-src"></div></div></div>
+  <div class="g2"><div class="card"><h2>Statuts du stock</h2><div id="c-stat"></div></div><div class="card"><h2>Articles qui dorment</h2><div id="c-dorm"></div></div></div>
   <div class="card"><h2>Top des articles les plus rentables</h2><div id="c-top"></div></div>
 </section>
 
@@ -55,6 +58,7 @@
     <input id="file" type="file" accept="image/*" multiple hidden>
     <div class="th" id="th"></div>
     <span class="lb">Prix et rentabilité</span>
+    <label>Source d'achat (facultatif)</label><input id="source" list="srcl" placeholder="Friperie, vide-grenier, Leboncoin..."><datalist id="srcl"><option value="Friperie"><option value="Vide-grenier"><option value="Leboncoin"><option value="Vinted"><option value="Autre"></datalist>
     <div class="g2">
       <div><label>Prix d'achat (€)</label><input id="achat" type="number" step="0.01" min="0" oninput="calc('achat')"><div class="em" id="e-achat"></div></div>
       <div><label>Frais éventuels (€)</label><input id="frais" type="number" step="0.01" min="0" value="0" oninput="calc('achat')"></div>
@@ -62,6 +66,7 @@
       <div><label>Prix voulu (€)</label><input id="prix" type="number" step="0.5" min="0" oninput="calc('prix')"></div>
     </div>
     <div class="sum" id="sum"></div>
+    <details style="margin-top:14px"><summary class="lb" style="cursor:pointer">Modèle de description</summary><textarea id="tpl" rows="6"></textarea><p class="note">Utilise {article} {marque} {couleur} {taille} {etat} {details}.</p><button type="button" class="btn s p" id="tpl-r" style="margin-top:8px">Rétablir le modèle</button></details>
     <button class="btn" id="save" onclick="save()">Enregistrer dans mon stock</button>
     <button class="btn s" onclick="gen()">Générer l'annonce</button>
     <button class="btn s" onclick="reset()">Vider</button>
