@@ -30,5 +30,20 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:10px 8px;
 svg text{fill:var(--m);font-size:11px}.vide{color:var(--m);text-align:center;padding:30px}.note{font-size:12px;color:var(--m);margin-top:14px}
 #toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,30px);background:var(--b);color:var(--bt);padding:12px 20px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.35s var(--e);z-index:99}#toast.on{opacity:1;transform:translate(-50%,0)}
 @keyframes in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes ap{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* ===== Animations avancées ===== */
+body::before,body::after{content:'';position:fixed;z-index:-1;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.16;pointer-events:none;animation:drift 22s ease-in-out infinite alternate}
+body::before{background:#6366f1;top:-20vmax;left:-15vmax}body::after{background:#10b981;bottom:-25vmax;right:-15vmax;animation-delay:-11s}
+[data-theme=clair] body::before,[data-theme=clair] body::after{opacity:.1}
+.logo{background:linear-gradient(90deg,var(--t),var(--m),var(--t));background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 4s linear infinite}
+.it,.kpi{animation-fill-mode:backwards!important;position:relative}.kpi{overflow:hidden}
+.it::after,.kpi::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--t) 14%,transparent),transparent 60%)}.hot::after{opacity:1}
+.btn,.chip{position:relative;overflow:hidden}.rp{position:absolute;border-radius:50%;background:currentColor;opacity:.25;transform:scale(0);animation:rp .6s ease-out forwards;pointer-events:none}
+.rv{opacity:0;transform:translateY(34px);transition:opacity .8s var(--e),transform .8s var(--e)}.rv.vis{opacity:1;transform:none}
+.chip.on{animation:pop .35s var(--e)}.drop{animation:pulse 3s ease-in-out infinite}
+#toast{transition:.55s cubic-bezier(.34,1.56,.64,1)}
+#c-mois rect{transform-box:fill-box;transform-origin:bottom}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.6s}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.2)}}@keyframes sh{to{background-position:-200% 0}}
+@keyframes rp{to{transform:scale(4);opacity:0}}@keyframes pop{50%{transform:scale(1.12)}}@keyframes pulse{50%{border-color:var(--m)}}@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}body::before,body::after,.drop,.logo{animation:none!important}.rv{opacity:1;transform:none}}
 @media(max-width:760px){.g2,.g3,.sum{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}nav{order:3;width:100%;justify-content:center}.hb{grid-template-columns:80px 1fr 60px}}

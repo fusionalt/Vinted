@@ -59,6 +59,21 @@ function dash(){const d=Store.all(),V=d.filter(a=>a.statut==='Vendu'),E=d.filter
  hbars('c-ren',CATS.map(c=>{const x=V.filter(a=>a.cat===c),b=sum(x,a=>a.vendu-cout(a));return[c,b,eur(b),x.length]}).filter(r=>r[3]));
  const top=V.slice().sort((a,b)=>(b.vendu-cout(b))-(a.vendu-cout(a))).slice(0,5);$('c-top').innerHTML='';if(!top.length)$('c-top').innerHTML='<div class="vide">Aucune vente enregistrée</div>';else top.forEach((a,i)=>{const r=document.createElement('div');r.className='hb';r.style.gridTemplateColumns='24px 1fr 80px';r.innerHTML='<span>'+(i+1)+'</span><span></span><b class="ok">'+eur(a.vendu-cout(a))+'</b>';r.children[1].textContent=titre(a);$('c-top').appendChild(r)})}
 
+/* ---- Animations avancées ---- */
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function countUp(){if(RM)return;document.querySelectorAll('.kpi b').forEach(b=>{const t=b.textContent,nums=t.match(/\d+(?:,\d+)?/g)||[];if(!nums.length)return;const T=nums.map(n=>parseFloat(n.replace(',','.'))),D=nums.map(n=>n.includes(',')?n.split(',')[1].length:0),t0=performance.now();(function f(now){const p=Math.min(1,(now-t0)/1100),e=1-Math.pow(1-p,4);let i=0;b.textContent=t.replace(/\d+(?:,\d+)?/g,()=>{const v=T[i]*e,d=D[i++];return v.toFixed(d).replace('.',',')});if(p<1)requestAnimationFrame(f)})(t0)})}
+const _dash=dash;dash=function(){_dash();countUp();document.querySelectorAll('#c-mois rect').forEach((r,i)=>{r.style.animation=`grow .8s var(--e) ${i*45}ms both`})};
+const _theme=theme;theme=function(){document.startViewTransition?document.startViewTransition(_theme):_theme()};
+function confetti(){if(RM)return;for(let i=0;i<40;i++){const d=document.createElement('i'),a=Math.random()*Math.PI*2,v=150+Math.random()*350;d.style.cssText=`position:fixed;left:50%;top:60%;width:8px;height:12px;background:${COL[i%5]};z-index:99;pointer-events:none;border-radius:2px`;document.body.appendChild(d);d.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:`translate(${Math.cos(a)*v}px,${Math.sin(a)*v-200}px) rotate(${Math.random()*720}deg)`,opacity:1,offset:.6},{transform:`translate(${Math.cos(a)*v*1.1}px,${Math.sin(a)*v+300}px) rotate(900deg)`,opacity:0}],{duration:1400+Math.random()*600,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>d.remove()}}
+const _sell=sell;sell=function(id){const n=Store.all().filter(a=>a.statut==='Vendu').length;_sell(id);if(Store.all().filter(a=>a.statut==='Vendu').length>n)confetti()};
+const _save=save;save=function(){const n=Store.all().length;_save();if(Store.all().length>n)confetti()};
+function cool(){document.querySelectorAll('.hot').forEach(x=>{x.classList.remove('hot');x.style.transform=''})}
+document.addEventListener('mousemove',e=>{if(RM)return;const c=e.target.closest&&e.target.closest('.it,.kpi');document.querySelectorAll('.hot').forEach(x=>{if(x!==c){x.classList.remove('hot');x.style.transform=''}});if(!c)return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;c.classList.add('hot');c.style.setProperty('--mx',x*100+'%');c.style.setProperty('--my',y*100+'%');c.style.transform=`perspective(700px) rotateX(${(.5-y)*8}deg) rotateY(${(x-.5)*8}deg) translateY(-6px)`});
+document.documentElement.addEventListener('mouseleave',cool);
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.btn,.chip');if(!b||RM)return;const r=b.getBoundingClientRect(),s=Math.max(r.width,r.height),p=document.createElement('span');p.className='rp';p.style.cssText=`width:${s}px;height:${s}px;left:${e.clientX-r.left-s/2}px;top:${e.clientY-r.top-s/2}px`;b.appendChild(p);setTimeout(()=>p.remove(),650)});
+const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('vis');io.unobserve(x.target)}}),{threshold:.08});
+document.querySelectorAll('.pg>.card,.pg>.g2>.card').forEach(c=>{c.classList.add('rv');io.observe(c)});
+
 /* ---- Démarrage ---- */
 chips('f-st',['Tous','En vente','Vendu'],()=>S.st,v=>{S.st=v;stock()});chips('f-c',['Tous',...CATS],()=>S.cat,v=>{S.cat=v;stock()});chips('f-tri',['Plus récents','Prix croissant','Prix décroissant','Rentabilité','Nom'],()=>S.tri,v=>{S.tri=v;stock()});chips('vue',['Cartes','Tableau'],()=>S.vue,v=>{S.vue=v;stock()});
 formCats();calc('achat');dash();
