@@ -1,0 +1,126 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Apprendre le HTML pas à pas</title>
+</head>
+
+<body>
+
+   <!-- TO DO 1 (INTRODUCTION) -->
+  <h1>Apprendre le HTML pas à pas</h1>
+
+  <p>Cette page est faite pour toi si tu n'as jamais écrit une ligne de code. Pas besoin de matériel compliqué : un éditeur de texte et un navigateur suffisent.</p>
+  <p>Le <strong>HTML</strong> est le langage qui décrit le contenu d'une page web : les titres, les paragraphes, les images et les liens. Le navigateur (Firefox, Chrome…) lit ton code et affiche la page.</p>
+  <p>Remarque : pour afficher une balise sur cette page, j'ai écrit <strong>&amp;lt;</strong> à la place de <strong>&lt;</strong> et <strong>&amp;gt;</strong> à la place de <strong>&gt;</strong>. Sinon, le navigateur croirait que c'est une vraie balise et ne l'afficherait pas.</p>
+
+  <!-- TO DO 2 (LE SQUELETTE) -->
+  <h2>1. Le squelette d'une page</h2>
+  <p>Toute page web commence par la même structure. Les balises <strong>&lt;html&gt;</strong> entourent toute la page. La partie <strong>&lt;head&gt;</strong> contient le titre de l'onglet, et la partie <strong>&lt;body&gt;</strong> contient ce qui s'affiche dans la page.</p>
+  <p>Voici une page minimale :</p>
+
+<pre>
+&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset="utf-8" /&gt;
+    &lt;title&gt;Titre de la page&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Mon premier titre&lt;/h1&gt;
+    &lt;p&gt;Mon premier paragraphe.&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+  <p>Enregistre ce code dans un fichier qui se termine par <strong>.html</strong> (par exemple <strong>index.html</strong>), puis ouvre-le dans ton navigateur.</p>
+
+  <!-- TO DO 3 (BALISES OUVRANTES ET FERMANTES) -->
+  <h2>2. Les balises ouvrantes et fermantes</h2>
+  <p>Presque toutes les balises fonctionnent par deux : une balise <strong>ouvrante</strong> comme <strong>&lt;p&gt;</strong> et une balise <strong>fermante</strong> comme <strong>&lt;/p&gt;</strong>. Ton texte se place entre les deux.</p>
+  <p>Seules quelques balises, comme <strong>&lt;img /&gt;</strong>, s'ouvrent et se ferment en une seule fois. On les appelle des balises orphelines.</p>
+
+  <!-- TO DO 4 (TITRES ET PARAGRAPHES) -->
+  <h2>3. Les titres et les paragraphes</h2>
+  <p>La balise <strong>&lt;h1&gt;</strong> sert au titre principal. La balise <strong>&lt;h2&gt;</strong> sert aux titres de sections, comme celui que tu es en train de lire. La balise <strong>&lt;p&gt;</strong> sert à écrire un paragraphe.</p>
+
+<pre>
+&lt;h1&gt;Ma passion&lt;/h1&gt;
+&lt;h2&gt;Pourquoi j'aime ça&lt;/h2&gt;
+&lt;p&gt;J'adore ça parce que c'est amusant.&lt;/p&gt;
+</pre>
+
+  <!-- TO DO 5 (LE GRAS) -->
+  <h2>4. Mettre un texte en gras</h2>
+  <p>Pour mettre en valeur un mot ou une phrase, on l'entoure de la balise <strong>&lt;strong&gt;</strong>.</p>
+
+<pre>
+&lt;p&gt;Ce mot est &lt;strong&gt;très important&lt;/strong&gt;.&lt;/p&gt;
+</pre>
+
+  <!-- TO DO 6 (LES IMAGES) -->
+  <h2>5. Insérer une image</h2>
+  <p>Range toutes tes images dans un dossier nommé <strong>images</strong>, à côté de ton fichier HTML. Ensuite, utilise la balise <strong>&lt;img /&gt;</strong>. L'attribut <strong>src</strong> (comme « source ») indique où se trouve l'image, et <strong>width</strong> règle sa largeur.</p>
+
+<pre>
+&lt;img src="images/chat.jpg" width="50%"/&gt;
+</pre>
+
+  <p>Pour centrer l'image, on l'entoure de la balise <strong>&lt;center&gt;</strong> :</p>
+
+<pre>
+&lt;center&gt;&lt;img src="images/chat.jpg" width="50%"/&gt;&lt;/center&gt;
+</pre>
+
+  <!-- TO DO 7 (LES LIENS) -->
+  <h2>6. Créer un lien</h2>
+  <p>Le lien est la balise la plus célèbre du web : <strong>&lt;a&gt;</strong>. L'attribut <strong>href</strong> (« hypertext reference ») contient l'adresse du lien. Le texte entre les balises est ce sur quoi on clique.</p>
+
+<pre>
+&lt;a href="https://www.onisep.fr"&gt;Le site de l'Onisep&lt;/a&gt;
+</pre>
+
+  <!-- TO DO 8 IMAGE CLIQUABLE -->
+  <h2>7. Une image cliquable</h2>
+  <p>Pour qu'on puisse cliquer sur une image, on place la balise <strong>&lt;img /&gt;</strong> à l'intérieur de la balise <strong>&lt;a&gt;</strong> :</p>
+
+<pre>
+&lt;a href="https://www.onisep.fr"&gt;
+  &lt;img src="images/logo.jpg" width="30%"/&gt;
+&lt;/a&gt;
+</pre>
+
+  <!-- TO DO 9 (OÙ TESTER SON CODE) -->
+  <h2>8. Où tester son code en ligne</h2>
+  <p>Tu n'as pas toujours Notepad++ sous la main ? Tu peux écrire ton HTML directement dans ton navigateur : le résultat s'affiche à côté pendant que tu tapes. Voici quelques sites pour essayer.</p>
+
+  <p><strong>HCODX</strong> : un éditeur HTML en ligne, gratuit et sans inscription, avec un aperçu en direct. C'est celui que j'utilise.</p>
+  <p><a href="https://hcodx.io/editor/">Ouvrir HCODX</a></p>
+
+  <p><strong>W3Schools (Tryit)</strong> : un éditeur très simple, avec un exemple déjà prêt à modifier.</p>
+  <p><a href="https://www.w3schools.com">Ouvrir l'éditeur de W3Schools</a></p>
+
+  <p><strong>CodePen</strong> : un éditeur très utilisé, pratique pour le HTML, le CSS et le JavaScript, mais plus chargé pour un débutant.</p>
+  <p><a href="https://codepen.io">Ouvrir CodePen</a></p>
+
+  <p><strong>JSFiddle</strong> : un autre éditeur en ligne du même genre.</p>
+  <p><a href="https://jsfiddle.net">Ouvrir JSFiddle</a></p>
+
+  <p><strong>Attention aux images :</strong> dans un éditeur en ligne, ton dossier <strong>images</strong> n'existe pas, car il est resté sur ton ordinateur. Une image comme <strong>images/chat.jpg</strong> ne s'affichera donc pas. Pour tester, utilise l'adresse web d'une image, ou teste d'abord sans image.</p>
+
+  <!-- TO DO 10 (ERREURS DE DÉBUTANT) -->
+  <h2>9. Les erreurs classiques des débutants</h2>
+  <p><strong>Balise fermante oubliée :</strong> si tu ouvres un &lt;p&gt; sans écrire &lt;/p&gt;, la page peut s'afficher bizarrement. Vérifie toujours que chaque balise ouverte est refermée.</p>
+  <p><strong>Mauvais nom d'image :</strong> le nom du fichier doit être exactement le même dans le dossier et dans le code, extension comprise. Un fichier chat.png n'est pas un fichier chat.jpg.</p>
+  <p><strong>Dossier mal placé :</strong> le dossier images doit se trouver à côté du fichier HTML. S'il est ailleurs, l'image ne s'affichera pas.</p>
+  <p><strong>Fichier enregistré en .txt :</strong> si ton fichier s'appelle index.html.txt, le navigateur ne le lira pas comme une page web. Vérifie que le nom se termine bien par .html.</p>
+  <p><strong>Oublier d'enregistrer ou d'actualiser :</strong> après chaque modification, enregistre le fichier dans l'éditeur, puis actualise l'onglet du navigateur.</p>
+  <p><strong>Guillemets manquants :</strong> dans href="..." ou src="...", n'oublie ni le guillemet ouvrant ni le guillemet fermant.</p>
+
+  <!-- CONCLUSION -->
+  <h2>Pour finir</h2>
+  <p>Tu connais maintenant les balises de base pour créer une première page web. Le meilleur moyen de progresser, c'est de <strong>tester, se tromper et corriger</strong>. Choisis un sujet que tu aimes et crée ta propre page !</p>
+
+</body>
+</html>
