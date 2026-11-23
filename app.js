@@ -220,4 +220,14 @@ const _boot=boot;boot=function(){_boot();if(!navigator.onLine)idb('get','c').the
 addEventListener('offline',()=>setSync('Hors ligne'));addEventListener('online',()=>{setSync('Synchronisation…');sb&&sb.auth.getSession().then(r=>{if(r.data.session){uid=r.data.session.user.id;usr=r.data.session.user;flush()}else authView('login','Reconnecte-toi pour synchroniser.')})});
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 (function(){const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d');x.fillStyle='#0a0a0a';x.fillRect(0,0,180,180);x.fillStyle='#fafafa';x.beginPath();x.moveTo(90,32);x.lineTo(148,90);x.lineTo(90,148);x.lineTo(32,90);x.closePath();x.fill();const l=document.createElement('link');l.rel='apple-touch-icon';l.href=c.toDataURL('image/png');document.head.appendChild(l)})();
+
+/* ---- Mode invité : utiliser sans se connecter, rien n’est enregistré ---- */
+let GUEST=false;
+const GMSG='Mode invité : rien n’est enregistré';
+function guest(){GUEST=true;uid=null;usr=null;MEM=[];SNAP={};ov.classList.add('off');setSync(GMSG);dash();stock()}
+const _av=authView;authView=function(v,m,g){if(GUEST&&m==='Reconnecte-toi pour synchroniser.')return;_av(v,m,g);if(v==='login'){const box=ov.querySelector('.box'),b=document.createElement('button'),n=document.createElement('p');b.className='btn s';b.id='b-guest';b.style.width='100%';b.textContent='Utiliser sans se connecter';b.onclick=guest;n.className='note';n.textContent='Mode invité : rien n’est enregistré, tout disparaît quand tu fermes ou recharges la page.';box.append(b,n)}};
+const _enter=enter;enter=async function(u){const g=GUEST?MEM.slice():[];GUEST=false;await _enter(u);if(g.length&&confirm(`Ajouter les ${g.length} articles saisis en mode invité à ton compte ?`)){const ids=new Set(MEM.map(a=>a.id));MEM=MEM.concat(g.filter(a=>!ids.has(a.id)));flush();dash();stock()}};
+const _s2=Store.set;Store.set=d=>{const r=_s2(d);if(GUEST)setSync(GMSG);return r};
+ab.onclick=()=>usr?authView('account'):authView('login');
+addEventListener('beforeunload',e=>{if(GUEST&&MEM.length){e.preventDefault();e.returnValue=''}});
 dash();
