@@ -1,6 +1,6 @@
 const prefix = 'fusiona-' + self.registration.scope + '-';
-const cacheName = prefix + 'dashboard-v1';
-const files = ['./', 'index.html', 'style.css', 'dashboard.css', 'app.js', 'manifest.json'];
+const cacheName = prefix + 'apercu-v2';
+const files = ['./', 'index.html', 'style.css', 'dashboard.css', 'app.js', 'radar.js', 'manifest.json','exemple-ralph-lauren.png'];
 const shell = new Set(files.map(file => new URL(file, self.registration.scope).href));
 
 self.addEventListener('install', event => {
