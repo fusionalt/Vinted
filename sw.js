@@ -1,6 +1,6 @@
 const prefix = 'fusiona-' + self.registration.scope + '-';
-const cacheName = prefix + 'mobile-1';
-const files = ['./', 'index.html', 'style.css?v=mobile-1', 'dashboard.css?v=mobile-1', 'app.js?v=mobile-1', 'equipe.js?v=mobile-1', 'manifest.json'];
+const cacheName = prefix + 'mobile-2';
+const files = ['./', 'index.html', 'style.css?v=mobile-2', 'dashboard.css?v=mobile-2', 'app.js?v=mobile-2', 'equipe.js?v=mobile-2', 'manifest.json'];
 const shell = new Set(files.map(file => new URL(file, self.registration.scope).href));
 
 self.addEventListener('install', event => {

@@ -80,6 +80,7 @@ function openTeam(member) {
 }
 function selectWorkspace(member){
   if(member && !workspaceNames.includes(member))return;
+  const switched=teamMember!==member;
   teamMember=member;
   localStorage.setItem('fusiona-espace',member);
   if(S.edit && !workspaceStock().some(a=>a.id===S.edit)) reset();
@@ -89,6 +90,7 @@ function selectWorkspace(member){
     $(id).value=member; $(id).disabled=!!member;
   }
   go(document.body.dataset.pg||'dash');
+  if(switched)animateData(document.body.dataset.pg||'dash');
   teamConnect();
 }
 const teamNav=teamNode('button','Tâches et apports');

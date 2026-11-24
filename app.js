@@ -14,7 +14,10 @@ const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 let forceMotion=localStorage.getItem('fusiona-anim')==='on';
 let counterSound=localStorage.getItem('fusiona-counter-sound')==='on';
 let audioContext=null, lastTone=-Infinity, counterFrame=0, finishCounters=null;
+const dataAnimations=new Set();
 function stopCounters(){
+  for(const animation of dataAnimations)animation.cancel();
+  dataAnimations.clear();
   cancelAnimationFrame(counterFrame);
   if(finishCounters) finishCounters();
   finishCounters=null;
@@ -48,32 +51,59 @@ function playCounterTone(){
   tone.connect(gain);gain.connect(audioContext.destination);tone.onended=()=>{tone.disconnect();gain.disconnect();};
   tone.start(t);tone.stop(t+.14);
 }
-function animateCounters(){
+function animateData(page){
   stopCounters();
   if(document.documentElement.dataset.motion!=='on' || document.hidden)return;
-  const elements=[...document.querySelectorAll('#volume-total,#kpis .kpi b')];
+  const panel=$('p-'+page);
+  if(!panel?.classList.contains('on'))return;
+  function play(node,frames,duration){
+    if(!node.animate)return;
+    const animation=node.animate(frames,{duration,easing:'cubic-bezier(.2,.7,.25,1)'});
+    dataAnimations.add(animation);
+    animation.onfinish=()=>dataAnimations.delete(animation);
+  }
+  for(const line of panel.querySelectorAll('svg polyline')){
+    if(line.classList.contains('chart-previous')){
+      play(line,[{opacity:0},{opacity:1}],440);
+      continue;
+    }
+    const length=line.getTotalLength();
+    if(length>0)play(line,[{strokeDasharray:String(length),strokeDashoffset:String(length)},{strokeDasharray:String(length),strokeDashoffset:'0'}],590);
+  }
+  for(const node of panel.querySelectorAll('#c-mois circle,#hour-chart circle')){
+    play(node,[{opacity:0},{opacity:0,offset:.6},{opacity:1}],590);
+  }
+  for(const node of panel.querySelectorAll('.status-track,.bar i,#obj-b,#c-mois rect')){
+    const vertical=node.tagName.toLowerCase()==='rect';
+    play(node,[{transform:vertical?'scaleY(0)':'scaleX(0)'},{transform:vertical?'scaleY(1)':'scaleX(1)'}],500);
+  }
+  const elements=[...panel.querySelectorAll('#volume-total,#kpis .kpi b,.big,#team-total,#preview-price,#preview-cost,#preview-profit,#v-out .sum b,#t-out .pr b,.pc>b,.t2 td.r')].slice(0,40);
   const counters=elements.flatMap(node=>{
     const label=node.textContent, match=label.match(/^(-?\d+)(,\d+)?( €| %| j)$/);
     if(!match)return [];
     const number=Number((match[1]+(match[2]||'')).replace(',','.'));
-    return number?[{node,label,number,digits:(match[2]?.length||1)-1,unit:match[3]}]:[];
+    return number?[{node,label,last:label,number,digits:(match[2]?.length||1)-1,unit:match[3]}]:[];
   });
   if(!counters.length)return;
-  prepareSound();
-  finishCounters=()=>counters.forEach(c=>{c.node.textContent=c.label;});
+  if(page==='dash')prepareSound();
+  finishCounters=()=>counters.forEach(c=>{if(c.node.textContent===c.last)c.node.textContent=c.label;});
   const start=performance.now();
   function draw(now){
     const p=Math.min(1,(now-start)/420), fraction=1-(1-p)**3;
-    for(const c of counters)c.node.textContent=(c.number*fraction).toFixed(c.digits).replace('.',',')+c.unit;
+    for(const c of counters){
+      if(!c.node.isConnected || c.node.textContent!==c.last)continue;
+      c.last=(c.number*fraction).toFixed(c.digits).replace('.',',')+c.unit;
+      c.node.textContent=c.last;
+    }
     if(p<1)counterFrame=requestAnimationFrame(draw);
-    else {stopCounters();playCounterTone();}
+    else {finishCounters();finishCounters=null;counterFrame=0;if(page==='dash')playCounterTone();}
   }
   counterFrame=requestAnimationFrame(draw);
 }
 $('motion-toggle').onclick=()=>{
   forceMotion=!forceMotion;localStorage.setItem('fusiona-anim',forceMotion?'on':'off');updateControls();
   toast(forceMotion?'Animations forcées':'Animations selon le réglage système');
-  if(forceMotion && document.body.dataset.pg==='dash')animateCounters();
+  if(forceMotion)animateData(document.body.dataset.pg);
 };
 $('sound-toggle').onclick=()=>{
   counterSound=!counterSound;localStorage.setItem('fusiona-counter-sound',counterSound?'on':'off');updateControls();
@@ -370,7 +400,7 @@ mk('budget',`<div id='b-out'></div>`);
 const nbb=document.createElement('button');nbb.id='n-budget';nbb.textContent='Budget';nbb.onclick=()=>go('budget');navEl.appendChild(nbb);
 const _go2=go;
 go=function(p){
-  const entering=p==='dash' && document.body.dataset.pg!=='dash';
+  const entering=document.body.dataset.pg!==p;
   stopCounters();
   document.body.dataset.pg=p;
   _go2(p);
@@ -380,7 +410,7 @@ go=function(p){
   if(b) budget();
   if(typeof teamPage !== 'undefined') teamPage(p);
   if(p==='verdict')verdict();
-  if(entering)animateCounters();
+  if(entering)animateData(p);
 };
 const HERO={dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
 document.querySelectorAll('.pg').forEach(s=>{const h=HERO[s.id.slice(2)];if(h){const d=document.createElement('div');d.className='hero';d.innerHTML=`<h1>${h[0]}</h1><p>${h[1]}</p>`;s.prepend(d)}});
@@ -531,7 +561,7 @@ function overview(articles) {
   svg.onpointermove=track; svg.onpointerdown=track; svg.onpointerleave=hide;
   svg.onfocus=()=>select(selected); svg.onblur=hide;
   svg.onkeydown=e=>{ if (['ArrowLeft','ArrowRight'].includes(e.key)) { e.preventDefault(); select(selected+(e.key==='ArrowRight'?1:-1)); } };
-  $('volume-period').onchange=()=>{stopCounters();overview(workspaceStock());animateCounters();};
+  $('volume-period').onchange=()=>{stopCounters();overview(workspaceStock());animateData('dash');};
   const colors=['#8494ad','#7153ed','#41a2cd','#48aba2'];
   $('overview-stock').innerHTML='<div class="status-track">'+counts.map((n,i)=>`<i style="width:${100*n/(articles.length||1)}%;background:${colors[i]}"></i>`).join('')+'</div>'+statuses.map((s,i)=>`<p><i style="background:${colors[i]}"></i>${s}<b>${counts[i]}</b></p>`).join('');
 }
