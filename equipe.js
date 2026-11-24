@@ -1,4 +1,3 @@
-let teamMember = '';
 let teamRows = [], teamAccount, teamChannel, teamRevision = 0;
 let teamReady = false, teamStatus = '';
 const teamMembers = ['Gatien','Jules'];
@@ -22,7 +21,7 @@ function teamAction(parent, text, action) {
 function teamRender() {
   $('team-state').textContent = teamStatus;
   $('team-heading').textContent = teamMember || 'En commun';
-  $('team-total').textContent = eur(teamContributions(teamMember) + (teamMember ? 0 : BUD.apports.reduce((s,a)=>s+a.montant,0)));
+  $('team-total').textContent = eur(teamContributions(teamMember) + BUD.apports.filter(inWorkspace).reduce((s,a)=>s+a.montant,0));
   const rows = teamRows.filter(row => !teamMember || row.member === teamMember);
   const tasks = $('team-tasks'), ledger = $('team-ledger');
   tasks.replaceChildren(); ledger.replaceChildren();
@@ -50,9 +49,9 @@ function teamRender() {
     teamAction(actions,row.done?'Rouvrir':'Terminer',()=>teamWrite('update',row,{done:!row.done}));
     line.append(actions); (row.done?finished:tasks).append(line);
   }
-  if(!teamMember) for(const entry of BUD.apports.slice().reverse()){
+  for(const entry of BUD.apports.filter(inWorkspace).slice().reverse()){
     const line=teamNode('div',''); line.className='team-line';
-    line.append(teamNode('strong',entry.label || 'Apport'),teamNode('span','Non attribué · '+eur(entry.montant)));
+    line.append(teamNode('strong',entry.label || 'Apport'),teamNode('span',(entry.member || 'Non attribué')+' · '+eur(entry.montant)));
     ledger.append(line);
   }
   if(!tasks.children.length) tasks.append(teamNode('p',teamReady?'Aucune tâche pour le moment.':''));
@@ -61,20 +60,45 @@ function teamRender() {
 }
 function teamPage(page) {
   $('p-team').classList.toggle('on',page==='team');
-  for(const button of $('team-switch').children) button.setAttribute('aria-pressed',String(page==='team' && button.dataset.member===teamMember));
+  $('n-team').classList.toggle('on',page==='team');
+  for(const button of $('team-switch').children) button.setAttribute('aria-pressed',String(button.dataset.member===teamMember));
+  const title=document.querySelector('#p-'+page+' .hero h1');
+  if(title && page!=='team'){
+    const label=HERO[page][0];
+    title.textContent=teamMember ? label+' · '+teamMember : label;
+  }
   if(page!=='team') return;
   const picker=$('task-article'), prior=picker.value;
-  picker.replaceChildren(new Option('Aucun article associé',''),...Store.all().map(a=>new Option(nm(a),a.id)));
+  picker.replaceChildren(new Option('Aucun article associé',''),...workspaceStock().map(a=>new Option(nm(a),a.id)));
   picker.value=prior;
   teamRender();
 }
 function openTeam(member) {
-  teamMember=member;
-  $('task-owner').value=member; $('money-owner').value=member;
+  if(member!==teamMember) selectWorkspace(member);
   go('team');
   teamConnect();
 }
-for(const button of $('team-switch').children) button.onclick=()=>openTeam(button.dataset.member);
+function selectWorkspace(member){
+  if(member && !workspaceNames.includes(member))return;
+  teamMember=member;
+  localStorage.setItem('fusiona-espace',member);
+  if(S.edit && !workspaceStock().some(a=>a.id===S.edit)) reset();
+  const current=Store.all().find(a=>a.id===S.edit);
+  setArticleOwner(current?.member);
+  for(const id of ['money-owner','task-owner']){
+    $(id).value=member; $(id).disabled=!!member;
+  }
+  go(document.body.dataset.pg||'dash');
+  teamConnect();
+}
+const teamNav=teamNode('button','Tâches et apports');
+teamNav.id='n-team';
+teamNav.onclick=()=>openTeam(teamMember);
+navEl.append(teamNav);
+for(const button of $('team-switch').children) button.onclick=()=>selectWorkspace(button.dataset.member);
+setArticleOwner('');
+for(const id of ['money-owner','task-owner']){$(id).value=teamMember;$(id).disabled=!!teamMember;}
+teamPage(document.body.dataset.pg||'dash');
 
 function updateBudgetView() {
   if(document.body.dataset.pg!=='budget' || !BLOADED && uid) return;

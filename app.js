@@ -3,6 +3,86 @@ const $=i=>document.getElementById(i),eur=n=>(Math.round(n*100)/100).toFixed(2).
 const S={cat:'Tous',st:'Tous',tri:'Plus récents',vue:'Cartes',per:'6 mois',edit:null,photos:[],fc:CATS[0],fe:ETATS[1],busy:false};
 
 /* ---- Couche données : seul ce bloc changera quand on branchera les comptes ---- */
+const workspaceNames=['Gatien','Jules'];
+let teamMember=workspaceNames.includes(localStorage.getItem('fusiona-espace'))?localStorage.getItem('fusiona-espace'):'';
+function inWorkspace(row){return !teamMember || row.member===teamMember;}
+function workspaceStock(){return Store.all().filter(inWorkspace);}
+function budgetKey(key){return teamMember ? key+'_'+teamMember : key;}
+function budgetOption(key){return BUD[budgetKey(key)] ?? (key==='ventes'?true:0);}
+function setArticleOwner(member){const field=$('article-member');field.value=teamMember || member || '';field.disabled=!!teamMember;}
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+let forceMotion=localStorage.getItem('fusiona-anim')==='on';
+let counterSound=localStorage.getItem('fusiona-counter-sound')==='on';
+let audioContext=null, lastTone=-Infinity, counterFrame=0, finishCounters=null;
+function stopCounters(){
+  cancelAnimationFrame(counterFrame);
+  if(finishCounters) finishCounters();
+  finishCounters=null;
+}
+function updateControls(){
+  const root=document.documentElement;
+  root.dataset.anim=forceMotion?'on':'';
+  root.dataset.motion=(forceMotion || !reducedMotion.matches)?'on':'off';
+  $('motion-toggle').setAttribute('aria-pressed',String(forceMotion));
+  $('motion-toggle').title=forceMotion?'Animations forcées · revenir au réglage système':'Forcer les animations sur cet appareil';
+  $('sound-toggle').setAttribute('aria-pressed',String(counterSound));
+  $('sound-toggle').title=counterSound?'Couper le son des compteurs':'Activer le son discret des compteurs';
+  if(root.dataset.motion==='off') stopCounters();
+}
+function prepareSound(){
+  if(!counterSound || document.hidden || document.documentElement.dataset.motion!=='on')return;
+  try{
+    const Audio=window.AudioContext || window.webkitAudioContext;
+    if(!Audio)return;
+    audioContext ||= new Audio();
+    if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
+  }catch{}
+}
+function playCounterTone(){
+  if(!counterSound || document.hidden || audioContext?.state!=='running' || performance.now()-lastTone<4000)return;
+  lastTone=performance.now();
+  const t=audioContext.currentTime, tone=audioContext.createOscillator(), gain=audioContext.createGain();
+  tone.type='sine'; tone.frequency.setValueAtTime(550,t); tone.frequency.exponentialRampToValueAtTime(660,t+.09);
+  gain.gain.setValueAtTime(.0001,t); gain.gain.exponentialRampToValueAtTime(.025,t+.016);
+  gain.gain.exponentialRampToValueAtTime(.0001,t+.13);
+  tone.connect(gain);gain.connect(audioContext.destination);tone.onended=()=>{tone.disconnect();gain.disconnect();};
+  tone.start(t);tone.stop(t+.14);
+}
+function animateCounters(){
+  stopCounters();
+  if(document.documentElement.dataset.motion!=='on' || document.hidden)return;
+  const elements=[...document.querySelectorAll('#volume-total,#kpis .kpi b')];
+  const counters=elements.flatMap(node=>{
+    const label=node.textContent, match=label.match(/^(-?\d+)(,\d+)?( €| %| j)$/);
+    if(!match)return [];
+    const number=Number((match[1]+(match[2]||'')).replace(',','.'));
+    return number?[{node,label,number,digits:(match[2]?.length||1)-1,unit:match[3]}]:[];
+  });
+  if(!counters.length)return;
+  prepareSound();
+  finishCounters=()=>counters.forEach(c=>{c.node.textContent=c.label;});
+  const start=performance.now();
+  function draw(now){
+    const p=Math.min(1,(now-start)/420), fraction=1-(1-p)**3;
+    for(const c of counters)c.node.textContent=(c.number*fraction).toFixed(c.digits).replace('.',',')+c.unit;
+    if(p<1)counterFrame=requestAnimationFrame(draw);
+    else {stopCounters();playCounterTone();}
+  }
+  counterFrame=requestAnimationFrame(draw);
+}
+$('motion-toggle').onclick=()=>{
+  forceMotion=!forceMotion;localStorage.setItem('fusiona-anim',forceMotion?'on':'off');updateControls();
+  toast(forceMotion?'Animations forcées':'Animations selon le réglage système');
+  if(forceMotion && document.body.dataset.pg==='dash')animateCounters();
+};
+$('sound-toggle').onclick=()=>{
+  counterSound=!counterSound;localStorage.setItem('fusiona-counter-sound',counterSound?'on':'off');updateControls();
+  prepareSound();toast(counterSound?'Son discret activé':'Son coupé');
+};
+reducedMotion.addEventListener('change',updateControls);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCounters();});
+updateControls();
+
 const Store={
  all(){try{let d=JSON.parse(localStorage.getItem(K));if(d)return d;d=JSON.parse(localStorage.getItem('vinted-stock-v2')||'[]').map(a=>({id:a.id,nom:a.titre,marque:a.marque||'',taille:'',couleur:'',details:'',cat:a.type==='Chaussures'?'Chaussures':'Vêtements',etat:'',achat:a.achat,frais:0,prix:a.prix,photos:a.photo?[a.photo]:[],statut:a.statut,vendu:a.vendu,ajout:a.dateAjout||a.id,vente:a.dateVente}));this.set(d);return d}catch(e){return[]}},
  set(d){try{localStorage.setItem(K,JSON.stringify(d));return true}catch(e){toast('Espace plein : supprime des photos');return false}}
@@ -25,11 +105,12 @@ function addFiles(fs){[...fs].filter(f=>f.type.startsWith('image/')).forEach(f=>
 const dz=$('drop');dz.onclick=()=>$('file').click();$('file').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 ['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('ov')}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('ov')}));dz.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
 function valid(){if(num('frais')<0){toast('Les frais doivent être positifs ou nuls.');$('frais').focus();return false;}let ok=true;[['nom','Indique l\'article'],['marque','Indique la marque'],['achat','Prix d\'achat requis']].forEach(([i,m])=>{const bad=i==='achat'?num(i)===null||num(i)<0:!$(i).value.trim();$(i).classList.toggle('err',bad);$('e-'+i).textContent=bad?m:'';if(bad)ok=false});if(!(num('prix')>0)){toast('Indique un prix voulu ou une marge');ok=false}return ok}
-function read(){return{nom:$('nom').value.trim(),marque:$('marque').value.trim(),taille:$('taille').value.trim(),couleur:$('couleur').value.trim(),details:$('details').value.trim(),location:$('storage-place').value.trim(),cat:S.fc,etat:S.fe,achat:num('achat'),frais:num('frais')||0,prix:num('prix'),photos:S.photos.slice()}}
-function save(){if(S.busy||!valid())return;S.busy=true;$('save').disabled=true;const d=Store.all(),v=read();let ok;if(S.edit){const i=d.findIndex(a=>a.id===S.edit);if(i<0){S.busy=false;$('save').disabled=false;toast('Cet article a été supprimé.');return;}d[i]=Object.assign(d[i],v);ok=Store.set(d)}else{d.push(Object.assign({id:Date.now(),statut:'En vente',vendu:null,ajout:Date.now(),vente:null},v));ok=Store.set(d)}
+function read(){return{member:teamMember || $('article-member').value,nom:$('nom').value.trim(),marque:$('marque').value.trim(),taille:$('taille').value.trim(),couleur:$('couleur').value.trim(),details:$('details').value.trim(),location:$('storage-place').value.trim(),cat:S.fc,etat:S.fe,achat:num('achat'),frais:num('frais')||0,prix:num('prix'),photos:S.photos.slice()}}
+function uniqueArticleId(){let id=Date.now();const used=new Set(Store.all().map(a=>a.id));while(used.has(id))id++;return id;}
+function save(){if(S.busy||!valid())return;S.busy=true;$('save').disabled=true;const d=Store.all(),v=read();let ok;if(S.edit){const i=d.findIndex(a=>a.id===S.edit);if(i<0){S.busy=false;$('save').disabled=false;toast('Cet article a été supprimé.');return;}d[i]=Object.assign(d[i],v);ok=Store.set(d)}else{d.push(Object.assign({id:uniqueArticleId(),statut:'En vente',vendu:null,ajout:Date.now(),vente:null},v));ok=Store.set(d)}
  S.busy=false;$('save').disabled=false;if(!ok)return;toast(S.edit?'Modifications enregistrées':'Article ajouté');reset();go('stock')}
-function reset(){$('storage-place').value='';S.edit=null;S.photos=[];S.fc=CATS[0];S.fe=ETATS[1];['nom','marque','taille','couleur','details','achat','prix'].forEach(i=>{$(i).value='';$(i).classList.remove('err')});$('frais').value=0;$('marge').value=100;$('out').style.display='none';$('f-titre').textContent='Nouvel article';$('save').textContent='Enregistrer dans mon stock';formCats();thumbs();calc('achat')}
-function edit(id){const a=Store.all().find(x=>x.id===id);if(!a)return;reset();$('storage-place').value=a.location||'';S.edit=id;['nom','marque','taille','couleur','details'].forEach(i=>$(i).value=a[i]||'');$('achat').value=a.achat;$('frais').value=a.frais||0;$('prix').value=a.prix;S.fc=a.cat;S.fe=a.etat||ETATS[1];S.photos=(a.photos||[]).slice();$('f-titre').textContent='Modifier l\'article';$('save').textContent='Enregistrer les modifications';formCats();thumbs();calc('prix');go('new')}
+function reset(){setArticleOwner('');$('storage-place').value='';S.edit=null;S.photos=[];S.fc=CATS[0];S.fe=ETATS[1];['nom','marque','taille','couleur','details','achat','prix'].forEach(i=>{$(i).value='';$(i).classList.remove('err')});$('frais').value=0;$('marge').value=100;$('out').style.display='none';$('f-titre').textContent='Nouvel article';$('save').textContent='Enregistrer dans mon stock';formCats();thumbs();calc('achat')}
+function edit(id){const a=Store.all().find(x=>x.id===id);if(!a)return;reset();setArticleOwner(a.member);$('storage-place').value=a.location||'';S.edit=id;['nom','marque','taille','couleur','details'].forEach(i=>$(i).value=a[i]||'');$('achat').value=a.achat;$('frais').value=a.frais||0;$('prix').value=a.prix;S.fc=a.cat;S.fe=a.etat||ETATS[1];S.photos=(a.photos||[]).slice();$('f-titre').textContent='Modifier l\'article';$('save').textContent='Enregistrer les modifications';formCats();thumbs();calc('prix');go('new')}
 function gen(){const v=read();if(!v.nom||!v.marque){valid();return}const L=[up(v.nom)+' '+v.marque+(v.couleur?' de couleur '+v.couleur:'')+(v.taille?', taille '+v.taille:'')+'.','État : '+v.etat.toLowerCase()+'.'];if(v.details)L.push(up(v.details)+(/[.!?]$/.test(v.details)?'':'.'));L.push('','Envoi rapide et soigné. N\'hésitez pas à poser vos questions ou à regrouper plusieurs articles pour économiser les frais de port !');$('o-t').textContent=titre(v);$('o-d').textContent=L.join('\n');$('o-l').href='https://www.vinted.fr/catalog?search_text='+encodeURIComponent([v.marque,v.nom,v.taille].join(' '));$('out').style.display='block'}
 async function cp(id,b){try{await navigator.clipboard.writeText($(id).textContent);toast('Texte copié');}catch{const range=document.createRange();range.selectNodeContents($(id));const selection=getSelection();selection.removeAllRanges();selection.addRange(range);toast('Texte sélectionné pour la copie');}}
 
@@ -82,8 +163,9 @@ function openSale(id){
   dialog.showModal();price.focus();price.select();
 }
 function del(id){if(!confirm('Supprimer cet article ?'))return;Store.set(Store.all().filter(a=>a.id!==id));toast('Article supprimé');stock()}
-function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(Store.all())],{type:'application/json'}));a.download='sauvegarde-fusiona.json';a.click()}
+function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(workspaceStock())],{type:'application/json'}));a.download='sauvegarde-fusiona.json';a.click()}
 async function imp(event){
+  if(teamMember){toast('Ouvre En commun pour restaurer la sauvegarde du stock.');event.target.value='';return;}
   const input=event.target, file=input.files[0];
   if(!file)return;
   input.value='';
@@ -109,7 +191,7 @@ async function imp(event){
 
 /* ---- Tableau de bord ---- */
 function hbars(id,rows){const z=$(id),m=Math.max(1,...rows.map(r=>Math.abs(r[1])));z.innerHTML=rows.length?rows.map((r,i)=>`<div class="hb"><span>${esc(r[0])}</span><div><i style="width:0;background:${r[1]<0?'var(--bad)':COL[i%5]}" data-w="${Math.abs(r[1])/m*100}"></i></div><b>${r[2]}</b></div>`).join(''):'<div class="vide">Pas encore de données</div>';requestAnimationFrame(()=>requestAnimationFrame(()=>z.querySelectorAll('i').forEach(i=>i.style.width=i.dataset.w+'%')))}
-function dash(){const d=Store.all(),V=d.filter(a=>a.statut==='Vendu'),E=d.filter(a=>a.statut!=='Vendu'),sum=(x,f)=>x.reduce((s,a)=>s+f(a),0);
+function dash(){stopCounters();const d=workspaceStock(),V=d.filter(a=>a.statut==='Vendu'),E=d.filter(a=>a.statut!=='Vendu'),sum=(x,f)=>x.reduce((s,a)=>s+f(a),0);
  const ca=sum(V,a=>a.vendu),ben=ca-sum(V,a=>cout(a)),vs=sum(E,a=>cout(a)),vp=sum(E,a=>a.prix),mm=V.length?Math.round(sum(V,a=>a.vendu/cout(a)-1)/V.length*100):0,dur=V.length?Math.round(sum(V,a=>(a.vente-a.ajout)/864e5)/V.length):0;
  const K2=[['Chiffre d\'affaires',eur(ca),''],['Bénéfice net',eur(ben),ben<0?'bad':'ok'],['Valeur du stock (achat)',eur(vs),''],['Valeur potentielle',eur(vp),''],['En stock / vendus',E.length+' / '+V.length,''],['Marge moyenne',mm+' %',''],['Rentabilité',ca?Math.round(ben/sum(V,a=>cout(a))*100)+' %':'0 %',''],['Durée moyenne de stockage',dur+' j','']];
  $('kpis').innerHTML=K2.map((k,i)=>`<div class="card kpi ${''}" style="animation-delay:${i*60}ms"><small>${k[0]}</small><b class="${k[2]}">${k[1]}</b></div>`).join('');
@@ -140,28 +222,28 @@ gen=function(){const v=read();if(!v.nom||!v.marque){valid();return}const m={arti
 $('tpl').value=localStorage.getItem('fusiona-tpl')||TPL0;$('tpl').oninput=()=>localStorage.setItem('fusiona-tpl',$('tpl').value);$('tpl-r').onclick=()=>{$('tpl').value=TPL0;localStorage.removeItem('fusiona-tpl')};
 chips('f-st',['Tous','En vente','Réservé','Vendu'],()=>S.st,v=>{S.st=v;stock()});
 const _stk=stock;stock=function(){_stk();const D=Store.all();document.querySelectorAll('#liste .it,#liste tbody tr').forEach(el=>{const e=el.querySelector('button[onclick^="edit("]');if(!e)return;const id=+e.getAttribute('onclick').match(/\d+/)[0],a=D.find(x=>x.id===id);if(!a)return;const add=(t,f)=>{const b=document.createElement('button');b.className='btn s p';b.textContent=t;b.onclick=f;e.parentNode.insertBefore(b,e)};if(a.statut!=='Vendu')add(a.statut==='Réservé'?'Dispo':'Réserver',()=>res(id));add('Dupliquer',()=>dup(id));const age=Math.floor((Date.now()-a.ajout)/864e5),bd=el.querySelector('.bg');if(a.statut==='En vente'&&age>=DORM&&bd){const z=document.createElement('span');z.className='bg';z.textContent='Dort '+age+' j';bd.after(z)}})};
-const _d2=dash;dash=function(){_d2();const d=Store.all(),V=d.filter(a=>a.statut==='Vendu'),grp=f=>{const m={};V.forEach(a=>{const k=f(a)||'Non précisé';m[k]=(m[k]||0)+a.vendu-cout(a)});return Object.entries(m).sort((x,y)=>y[1]-x[1]).slice(0,6).map(([k,b])=>[k,b,eur(b)])};
+const _d2=dash;dash=function(){_d2();const d=workspaceStock(),V=d.filter(a=>a.statut==='Vendu'),grp=f=>{const m={};V.forEach(a=>{const k=f(a)||'Non précisé';m[k]=(m[k]||0)+a.vendu-cout(a)});return Object.entries(m).sort((x,y)=>y[1]-x[1]).slice(0,6).map(([k,b])=>[k,b,eur(b)])};
  hbars('c-marque',grp(a=>a.marque));hbars('c-src',grp(a=>a.source));overview(d);
- const o=+localStorage.getItem('fusiona-obj')||0,nw=new Date(),mp=V.filter(a=>{const x=new Date(a.vente);return x.getMonth()===nw.getMonth()&&x.getFullYear()===nw.getFullYear()}).reduce((s,a)=>s+a.vendu-cout(a),0);$('obj').value=o||'';$('obj-b').style.width=o?Math.max(0,Math.min(100,mp/o*100))+'%':'0%';$('obj-t').textContent=o?eur(mp)+' sur '+eur(o)+' ('+Math.round(mp/o*100)+' %)':'Définis un objectif pour suivre ta progression';
+ const o=+localStorage.getItem(budgetKey('fusiona-obj'))||0,nw=new Date(),mp=V.filter(a=>{const x=new Date(a.vente);return x.getMonth()===nw.getMonth()&&x.getFullYear()===nw.getFullYear()}).reduce((s,a)=>s+a.vendu-cout(a),0);$('obj').value=o||'';$('obj-b').style.width=o?Math.max(0,Math.min(100,mp/o*100))+'%':'0%';$('obj-t').textContent=o?eur(mp)+' sur '+eur(o)+' ('+Math.round(mp/o*100)+' %)':'Définis un objectif pour suivre ta progression';
  const z=$('c-dorm'),L=d.filter(a=>a.statut==='En vente'&&(Date.now()-a.ajout)/864e5>=DORM).sort((a,b)=>a.ajout-b.ajout).slice(0,5);z.innerHTML=L.length?'':'<div class="vide">Aucun article ne dort depuis plus de '+DORM+' jours</div>';
  L.forEach(a=>{const np=Math.max(Math.round(a.prix*.9),Math.ceil(cout(a))),r=document.createElement('div');r.className='hb';r.style.gridTemplateColumns='1fr auto auto';r.innerHTML='<span></span><span class="pr"></span><button class="btn s p">Baisser</button>';r.children[0].textContent=titre(a);r.children[1].textContent=Math.floor((Date.now()-a.ajout)/864e5)+' j · '+eur(a.prix)+' → '+eur(np);r.children[2].onclick=()=>{const D=Store.all();D.find(x=>x.id===a.id).prix=np;Store.set(D);toast('Prix baissé à '+eur(np));dash()};z.appendChild(r)})};
-$('obj').onchange=()=>{localStorage.setItem('fusiona-obj',$('obj').value);dash()};
+$('obj').onchange=()=>{localStorage.setItem(budgetKey('fusiona-obj'),$('obj').value);dash()};
 const fab=document.createElement('button');fab.className='ic';fab.textContent='+';fab.title='Ajout rapide (touche N)';fab.setAttribute('aria-label','Nouvel article');fab.style.cssText='position:fixed;right:22px;bottom:22px;width:54px;height:54px;border-radius:50%;font-size:26px;background:var(--b);color:var(--bt);z-index:40;box-shadow:var(--sh)';fab.onclick=()=>{reset();go('new');setTimeout(()=>$('nom').focus(),300)};document.body.appendChild(fab);
 document.addEventListener('keydown',e=>{if(e.key==='n'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)&&!e.ctrlKey&&!e.metaKey)fab.click()});
-const cb=document.createElement('button');cb.className='btn s';cb.textContent='Exporter les ventes (CSV)';cb.onclick=()=>{const q=s=>'"'+String(s===null||s===undefined?'':s).replace(/"/g,'""')+'"',R=[['Article','Catégorie','Source','Achat','Frais','Prix de vente','Bénéfice','Date de vente']].concat(Store.all().filter(a=>a.statut==='Vendu').map(a=>[titre(a),a.cat,a.source||'',a.achat,a.frais||0,a.vendu,(a.vendu-cout(a)).toFixed(2),new Date(a.vente).toLocaleDateString('fr-FR')])),l=document.createElement('a');l.href=URL.createObjectURL(new Blob(['\ufeff'+R.map(r=>r.map(q).join(';')).join('\n')],{type:'text/csv'}));l.download='ventes-fusiona.csv';l.click()};document.querySelector('#p-stock .btn.s').after(cb);
+const cb=document.createElement('button');cb.className='btn s';cb.textContent='Exporter les ventes (CSV)';cb.onclick=()=>{const q=s=>'"'+String(s===null||s===undefined?'':s).replace(/"/g,'""')+'"',R=[['Article','Catégorie','Source','Achat','Frais','Prix de vente','Bénéfice','Date de vente']].concat(workspaceStock().filter(a=>a.statut==='Vendu').map(a=>[titre(a),a.cat,a.source||'',a.achat,a.frais||0,a.vendu,(a.vendu-cout(a)).toFixed(2),new Date(a.vente).toLocaleDateString('fr-FR')])),l=document.createElement('a');l.href=URL.createObjectURL(new Blob(['\ufeff'+R.map(r=>r.map(q).join(';')).join('\n')],{type:'text/csv'}));l.download='ventes-fusiona.csv';l.click()};document.querySelector('#p-stock .btn.s').after(cb);
 
 /* ---- Refonte : cartes, tableau, listes à mémoire, courbe ---- */
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-const nm=a=>{const n=up(a.nom||'');return a.marque&&!n.toLowerCase().includes(a.marque.toLowerCase())?n+' '+a.marque:n},sbt=a=>[a.taille&&(/^taille\b/i.test(a.taille)?a.taille:'Taille '+a.taille),a.couleur,a.etat,a.location].filter(Boolean).join(' · ');
+const nm=a=>{const n=up(a.nom||'');return a.marque&&!n.toLowerCase().includes(a.marque.toLowerCase())?n+' '+a.marque:n},sbt=a=>[a.taille&&(/^taille\b/i.test(a.taille)?a.taille:'Taille '+a.taille),a.couleur,a.etat,a.location,!teamMember&&a.member].filter(Boolean).join(' · ');
 S.mode='Courbe';COL.splice(0,5,'#a5b4fc','#818cf8','#6366f1','#4f46e5','#4338ca');
-stock=function(){let d=Store.all();const q=$('q').value.toLowerCase();d=d.filter(a=>(!q||(titre(a)+' '+a.cat+' '+(a.source||'')+' '+(a.location||'')).toLowerCase().includes(q))&&(S.st==='Tous'||a.statut===S.st)&&(S.cat==='Tous'||a.cat===S.cat));
+stock=function(){let d=workspaceStock();const q=$('q').value.toLowerCase();d=d.filter(a=>(!q||(titre(a)+' '+a.cat+' '+(a.source||'')+' '+(a.location||'')).toLowerCase().includes(q))&&(S.st==='Tous'||a.statut===S.st)&&(S.cat==='Tous'||a.cat===S.cat));
  const P=a=>a.statut==='Vendu'?a.vendu:a.prix,B=a=>P(a)-cout(a),T={'Plus récents':(a,b)=>b.ajout-a.ajout,'Prix croissant':(a,b)=>P(a)-P(b),'Prix décroissant':(a,b)=>P(b)-P(a),'Rentabilité':(a,b)=>B(b)-B(a),'Nom':(a,b)=>nm(a).localeCompare(nm(b))};d.sort(T[S.tri]);
  $('cnt').textContent='· '+d.length+(d.length>1?' articles':' article');const z=$('liste');z.innerHTML='';if(!d.length){z.innerHTML="<div class='vide card'>Aucun article ne correspond.</div>";return}
  const age=a=>Math.floor((Date.now()-a.ajout)/864e5),pill=a=>`<span class='pl ${a.statut==='Vendu'?'v':a.statut==='Réservé'?'r':''}'>${a.statut}</span>`,ach=a=>cout(a)>0?eur(cout(a)):'Gratuit',mg=a=>cout(a)>0?Math.round(B(a)/cout(a)*100)+' %':'coût nul',cl=a=>B(a)>=0?'ok':'bad',sg=a=>(B(a)>=0?'+':'')+eur(B(a)),ph=a=>a.photos&&a.photos[0]?`<img loading='lazy' src='${esc(a.photos[0])}' alt=''>`:'',
   act=a=>`<div class='ac'>${a.statut!=='Vendu'?`<button class='btn p' data-a='sell' data-i='${a.id}'>Vendu</button>`:''}<button class='btn s p' data-a='menu' data-i='${a.id}' aria-label='Plus d actions'>⋯</button></div>`;
  if(S.vue==='Tableau'){z.innerHTML=`<div class='card tb'><table class='t2'><thead><tr><th></th><th>Article</th><th>Catégorie</th><th class='r'>Achat</th><th class='r'>Prix</th><th class='r'>Bénéfice</th><th>Statut</th><th></th></tr></thead><tbody>${d.map(a=>`<tr><td><span class='th2'>${ph(a)}</span></td><td><div class='nm2'>${esc(nm(a))}</div><div class='sb'>${esc(sbt(a))}</div></td><td>${a.cat}</td><td class='r'>${ach(a)}</td><td class='r'>${eur(P(a))}</td><td class='r ${cl(a)}'>${sg(a)}</td><td>${pill(a)}</td><td class='r'>${act(a)}</td></tr>`).join('')}</tbody></table></div>`;return}
  z.innerHTML=`<div class='gr'>${d.map((a,i)=>`<div class='it' style='animation-delay:${Math.min(i*40,400)}ms'><div class='ph'>${ph(a)||'Pas de photo'}${pill(a)}${a.statut==='En vente'&&age(a)>=DORM?`<span class='pl z'>Dort ${age(a)} j</span>`:''}</div><div class='bd'><div class='br'>${esc(a.marque||a.cat)}</div><div class='nm'>${esc(nm(a))}</div><div class='sb'>${esc(sbt(a))}</div><div class='pc'><b>${eur(P(a))}</b><span class='mg ${cl(a)}'>${sg(a)} · ${mg(a)}</span></div><div class='ft'><span>Achat ${ach(a)}</span><span>${a.cat}</span></div>${act(a)}</div></div>`).join('')}</div>`};
-document.addEventListener('click',e=>{let p=$('pop');if(!p){p=document.createElement('div');p.id='pop';document.body.appendChild(p)}const b=e.target.closest&&e.target.closest('[data-a]');if(!b){p.classList.remove('on');return}const id=+b.dataset.i;if(b.dataset.a==='sell'){p.classList.remove('on');return sell(id)}const a=Store.all().find(x=>x.id===id);p.innerHTML='';[['Modifier',()=>edit(id)],['Dupliquer',()=>dup(id)],['Créer une tâche',()=>{openTeam('');$('task-article').value=String(id);$('task-label').focus()}],[a.statut==='Réservé'?'Remettre en vente':'Réserver',()=>res(id)],['Supprimer',()=>del(id),1]].filter(x=>a.statut!=='Vendu'||['Modifier','Dupliquer','Créer une tâche','Supprimer'].includes(x[0])).forEach(([t,f,dg])=>{const r=document.createElement('div');r.textContent=t;if(dg)r.className='dg';r.onclick=ev=>{ev.stopPropagation();p.classList.remove('on');f()};p.appendChild(r)});const r=b.getBoundingClientRect();p.style.top=(r.bottom+scrollY+6)+'px';p.style.left=Math.max(8,Math.min(r.right+scrollX-170,innerWidth-180))+'px';p.classList.add('on');e.stopPropagation()},true);
+document.addEventListener('click',e=>{let p=$('pop');if(!p){p=document.createElement('div');p.id='pop';document.body.appendChild(p)}const b=e.target.closest&&e.target.closest('[data-a]');if(!b){p.classList.remove('on');return}const id=+b.dataset.i;if(b.dataset.a==='sell'){p.classList.remove('on');return sell(id)}const a=Store.all().find(x=>x.id===id);p.innerHTML='';[['Modifier',()=>edit(id)],['Dupliquer',()=>dup(id)],['Créer une tâche',()=>{openTeam(teamMember);$('task-article').value=String(id);$('task-label').focus()}],[a.statut==='Réservé'?'Remettre en vente':'Réserver',()=>res(id)],['Supprimer',()=>del(id),1]].filter(x=>a.statut!=='Vendu'||['Modifier','Dupliquer','Créer une tâche','Supprimer'].includes(x[0])).forEach(([t,f,dg])=>{const r=document.createElement('div');r.textContent=t;if(dg)r.className='dg';r.onclick=ev=>{ev.stopPropagation();p.classList.remove('on');f()};p.appendChild(r)});const r=b.getBoundingClientRect();p.style.top=(r.bottom+scrollY+6)+'px';p.style.left=Math.max(8,Math.min(r.right+scrollX-170,innerWidth-180))+'px';p.classList.add('on');e.stopPropagation()},true);
 
 /* ---- Listes qui retiennent tes valeurs ---- */
 const OPT='fusiona-opts',FIELDS=['nom','marque','taille','couleur','details','source'];
@@ -175,11 +257,11 @@ FIELDS.forEach(combo);
 const _sv=save;save=function(){if($('nom').value.trim()&&$('marque').value.trim()&&num('achat')!==null)remember();_sv()};
 
 /* ---- Courbe, couleurs sobres, indicateurs sans valeur infinie ---- */
-function courbe(){const V=Store.all().filter(a=>a.statut==='Vendu'),n=S.per==='6 mois'?6:12,now=new Date(),M=[];for(let i=n-1;i>=0;i--){const m=new Date(now.getFullYear(),now.getMonth()-i,1);M.push({k:m.getFullYear()*12+m.getMonth(),l:m.toLocaleDateString('fr-FR',{month:'short'}),ca:0,b:0})}V.forEach(a=>{const d=new Date(a.vente),m=M.find(x=>x.k===d.getFullYear()*12+d.getMonth());if(m){m.ca+=a.vendu;m.b+=a.vendu-cout(a)}});
+function courbe(){const V=workspaceStock().filter(a=>a.statut==='Vendu'),n=S.per==='6 mois'?6:12,now=new Date(),M=[];for(let i=n-1;i>=0;i--){const m=new Date(now.getFullYear(),now.getMonth()-i,1);M.push({k:m.getFullYear()*12+m.getMonth(),l:m.toLocaleDateString('fr-FR',{month:'short'}),ca:0,b:0})}V.forEach(a=>{const d=new Date(a.vente),m=M.find(x=>x.k===d.getFullYear()*12+d.getMonth());if(m){m.ca+=a.vendu;m.b+=a.vendu-cout(a)}});
  const W=720,H=240,Pd=30,mx=Math.max(1,...M.map(m=>Math.max(m.ca,m.b))),lo=Math.min(0,...M.map(m=>m.b)),X=i=>Pd+i*(W-2*Pd)/Math.max(1,M.length-1),Y=v=>H-26-(v-lo)/(mx-lo)*(H-50),
   ln=(k,c)=>`<polyline points='${M.map((m,i)=>X(i)+','+Y(m[k])).join(' ')}' fill='none' stroke='${c}' stroke-width='2.5' stroke-linejoin='round'/>`+M.map((m,i)=>`<circle cx='${X(i)}' cy='${Y(m[k])}' r='4.5' fill='${c}'><title>${m.l} : ${eur(m[k])}</title></circle>`).join('');
  $('c-mois').innerHTML=`<svg viewBox='0 0 ${W} ${H}' width='100%' role='img' aria-label='Ventes et bénéfices par mois'>`+`<path d='M${Pd} ${Y(0)}H${W-Pd}' class='chart-grid'/>`+ln('ca','#6366f1')+ln('b','#10b981')+M.map((m,i)=>`<text x='${X(i)}' y='${H-6}' text-anchor='middle'>${m.l}</text>`).join('')+`</svg><div class='pr'><span style='color:#6366f1'>■</span> Ventes &nbsp; <span style='color:#10b981'>■</span> Bénéfice</div>`}
-const _d3=dash;dash=function(){_d3();const V=Store.all().filter(a=>a.statut==='Vendu'),k=document.querySelectorAll('.kpi b'),c0=V.reduce((s,a)=>s+cout(a),0),pos=V.filter(a=>cout(a)>0);if(k[5])k[5].textContent=pos.length?Math.round(pos.reduce((s,a)=>s+a.vendu/cout(a)-1,0)/pos.length*100)+' %':'—';if(k[6]&&c0===0)k[6].textContent=V.length?'Pur bénéfice':'0 %';if(S.mode==='Courbe')courbe();const mz=document.createElement('div');mz.id='mode';mz.className='row';mz.style.marginLeft='8px';$('per').appendChild(mz);chips('mode',['Barres','Courbe'],()=>S.mode,v=>{S.mode=v;dash()})};
+const _d3=dash;dash=function(){_d3();const V=workspaceStock().filter(a=>a.statut==='Vendu'),k=document.querySelectorAll('.kpi b'),c0=V.reduce((s,a)=>s+cout(a),0),pos=V.filter(a=>cout(a)>0);if(k[5])k[5].textContent=pos.length?Math.round(pos.reduce((s,a)=>s+a.vendu/cout(a)-1,0)/pos.length*100)+' %':'—';if(k[6]&&c0===0)k[6].textContent=V.length?'Pur bénéfice':'0 %';if(S.mode==='Courbe')courbe();const mz=document.createElement('div');mz.id='mode';mz.className='row';mz.style.marginLeft='8px';$('per').appendChild(mz);chips('mode',['Barres','Courbe'],()=>S.mode,v=>{S.mode=v;dash()})};
 
 /* ---- Comptes et sauvegarde en ligne (Supabase) ---- */
 const SBURL='https://wcctvhxevsdrvntevmwb.supabase.co',SBKEY='sb_publishable_38T_QxjN3-bslcZEU8x94A_05Z9tln3',LEG=Store.all(),REC=location.hash.includes('type=recovery');
@@ -222,13 +304,13 @@ S.vc='Toutes';chips('v-cat',['Toutes',...CATS],()=>S.vc,v=>{S.vc=v;verdict()});
 res=function(id){const d=Store.all(),a=d.find(x=>x.id===id);a.statut=a.statut==='Réservé'?'En vente':'Réservé';a.reserve=a.statut==='Réservé'?Date.now():null;Store.set(d);toast(a.statut==='Réservé'?'Article réservé':'Remis en vente');stock()};
 function verdict(){const m=$('v-marque').value.trim().toLowerCase(),p=parseFloat($('v-prix').value),g=parseFloat($('v-marge').value),ref=parseFloat($('v-ref').value),o=$('v-out');
  if(isNaN(p)||isNaN(g)){o.innerHTML=`<div class='vide'>Saisis le prix demandé et ta marge cible.</div>`;return}
- const V=Store.all().filter(a=>a.statut==='Vendu'),bb=m?V.filter(a=>(a.marque||'').toLowerCase()===m):[],bc=S.vc==='Toutes'?[]:V.filter(a=>a.cat===S.vc),pool=bb.length>=2?bb:bc.length>=2?bc:bb,src=!pool.length?'':pool===bb?'tes ventes de cette marque':'tes ventes de cette catégorie',avg=pool.length?pool.reduce((s,a)=>s+a.vendu,0)/pool.length:null,jr=pool.length?Math.round(pool.reduce((s,a)=>s+(a.vente-a.ajout)/864e5,0)/pool.length):0,own=!isNaN(ref)&&ref>0,resale=own?ref:avg;
+ const V=workspaceStock().filter(a=>a.statut==='Vendu'),bb=m?V.filter(a=>(a.marque||'').toLowerCase()===m):[],bc=S.vc==='Toutes'?[]:V.filter(a=>a.cat===S.vc),pool=bb.length>=2?bb:bc.length>=2?bc:bb,src=!pool.length?'':pool===bb?'tes ventes de cette marque':'tes ventes de cette catégorie',avg=pool.length?pool.reduce((s,a)=>s+a.vendu,0)/pool.length:null,jr=pool.length?Math.round(pool.reduce((s,a)=>s+(a.vente-a.ajout)/864e5,0)/pool.length):0,own=!isNaN(ref)&&ref>0,resale=own?ref:avg;
  if(resale===null){o.innerHTML=`<div class='card'><b>Pas de vente comparable.</b><p class='pr'>Tu n’as encore rien vendu dans cette marque ou cette catégorie. Repère le prix de vente d’articles identiques sur Vinted et saisis-le dans « Prix de revente repéré ».</p></div>`;return}
  const max=resale/(1+g/100),gain=resale-p,pc=p>0?Math.round(gain/p*100):0,r=p<=max*.8?['#34d399','Excellente affaire']:p<=max?['#34d399','Bonne affaire']:p<=max*1.2?['#f59e0b','À négocier']:['#f87171','Trop cher'],conf=own?'prix saisi par toi':pool.length>=8?'bonne ('+pool.length+' ventes)':pool.length>=3?'moyenne ('+pool.length+' ventes)':'faible ('+pool.length+' vente'+(pool.length>1?'s':'')+')',offre=Math.floor(max*2)/2;
  o.innerHTML=`<div class='card'><div style='font-size:26px;font-weight:700;color:${r[0]}'>${r[1]}</div><div class='sum' style='margin-top:14px'><div>Revente estimée<b>${eur(resale)}</b></div><div>Prix d’achat maximum<b>${eur(max)}</b></div><div>Gain si tu achètes à ${eur(p)}<b class='${gain>=0?'ok':'bad'}'>${gain>=0?'+':''}${eur(gain)} · ${pc} %</b></div>${pool.length&&!own?`<div>Délai moyen<b>${jr} j</b></div>`:''}<div>Fiabilité<b>${conf}</b></div></div>${src&&!own?`<p class='note'>Estimation basée sur ${src}. Elle ne tient compte ni de l’état exact ni de la saison.</p>`:''}${p>max?`<div class='res' id='v-msg'></div><button class='btn s p' style='margin-top:8px' id='v-cp'>Copier le message</button>`:''}</div>`;
  if(p>max){$('v-msg').textContent=`Bonjour, votre article m’intéresse. Seriez-vous d’accord pour ${eur(offre)} ? Merci !`;$('v-cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('v-msg').textContent);$('v-cp').textContent='Copié !'}}}
-function today(){const d=Store.all(),now=Date.now(),day=864e5,o=$('t-out');o.innerHTML='';
- const V=d.filter(a=>a.statut==='Vendu'),nw=new Date(),mp=V.filter(a=>{const x=new Date(a.vente);return x.getMonth()===nw.getMonth()&&x.getFullYear()===nw.getFullYear()}).reduce((s,a)=>s+a.vendu-cout(a),0),ob=+localStorage.getItem('fusiona-obj')||0;
+function today(){const d=workspaceStock(),now=Date.now(),day=864e5,o=$('t-out');o.innerHTML='';
+ const V=d.filter(a=>a.statut==='Vendu'),nw=new Date(),mp=V.filter(a=>{const x=new Date(a.vente);return x.getMonth()===nw.getMonth()&&x.getFullYear()===nw.getFullYear()}).reduce((s,a)=>s+a.vendu-cout(a),0),ob=+localStorage.getItem(budgetKey('fusiona-obj'))||0;
  const h=document.createElement('div');h.className='card';h.innerHTML=`<h2>Aujourd’hui</h2><div class='pr'>Bénéfice du mois : <b style='color:var(--t)'>${eur(mp)}</b>${ob?' sur '+eur(ob)+' d’objectif':''}</div>`;o.appendChild(h);
  const sec=(t,items)=>{if(!items.length)return 0;const c=document.createElement('div');c.className='card';c.innerHTML=`<h2>${t} <span class='pr'>· ${items.length}</span></h2>`;items.forEach(([a,txt,btn,fn])=>{const r=document.createElement('div');r.className='hb';r.style.gridTemplateColumns='1fr auto auto';r.innerHTML=`<span></span><span class='pr'></span><button class='btn s p'></button>`;r.children[0].textContent=titre(a);r.children[1].textContent=txt;r.children[2].textContent=btn;r.children[2].onclick=fn;c.appendChild(r)});o.appendChild(c);return 1};
  const age=a=>Math.floor((now-a.ajout)/day),dorm=d.filter(a=>a.statut==='En vente'&&age(a)>=DORM).sort((a,b)=>a.ajout-b.ajout).map(a=>{const np=Math.max(Math.round(a.prix*.9),Math.ceil(cout(a)));return[a,age(a)+' j · '+eur(a.prix)+' → '+eur(np),'Baisser',()=>{const D=Store.all();D.find(x=>x.id===a.id).prix=np;Store.set(D);toast('Prix baissé à '+eur(np));today()}]}),
@@ -282,6 +364,8 @@ mk('budget',`<div id='b-out'></div>`);
 const nbb=document.createElement('button');nbb.id='n-budget';nbb.textContent='Budget';nbb.onclick=()=>go('budget');navEl.appendChild(nbb);
 const _go2=go;
 go=function(p){
+  const entering=p==='dash' && document.body.dataset.pg!=='dash';
+  stopCounters();
   document.body.dataset.pg=p;
   _go2(p);
   const b=p==='budget';
@@ -289,6 +373,8 @@ go=function(p){
   $('n-budget').classList.toggle('on',b);
   if(b) budget();
   if(typeof teamPage !== 'undefined') teamPage(p);
+  if(p==='verdict')verdict();
+  if(entering)animateCounters();
 };
 const HERO={dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
 document.querySelectorAll('.pg').forEach(s=>{const h=HERO[s.id.slice(2)];if(h){const d=document.createElement('div');d.className='hero';d.innerHTML=`<h1>${h[0]}</h1><p>${h[1]}</p>`;s.prepend(d)}});
@@ -315,7 +401,7 @@ const _g=guest;guest=function(){BUD=newBud();_g()};
 let budgetPending=0, budgetVersion=0, budgetBaseline=newBud(), budgetQueue=Promise.resolve();
 function mergeBudget(base,local,remote){
   const merged=Object.assign(newBud(),remote);
-  for(const key of ['plafond','ventes']) if(local[key]!==base[key]) merged[key]=local[key];
+  for(const key of ['plafond','ventes','plafond_Gatien','plafond_Jules','ventes_Gatien','ventes_Jules']) if(local[key]!==base[key]) merged[key]=local[key];
   for(const key of ['apports','depenses']){
     const before=new Map(base[key].map(x=>[x.id,x]));
     const after=new Map(local[key].map(x=>[x.id,x]));
@@ -368,27 +454,29 @@ function bsave(){
     }).catch(()=>{if(uid===owner)setSync('Budget non enregistré');});
   },300);
 }
-function bstat(){const V=Store.all().filter(a=>a.statut==='Vendu'),ap=teamContributions()+BUD.apports.reduce((s,x)=>s+x.montant,0),ve=BUD.ventes?V.reduce((s,a)=>s+a.vendu,0):0,sm=st=>BUD.depenses.filter(x=>x.statut===st).reduce((s,x)=>s+x.montant,0),rec=sm('Reçu'),route=sm('En route'),env=sm('Envie'),solde=ap+ve-rec-route;return{ap,ve,rec,route,env,solde,apres:solde-env}}
+function bstat(){const V=workspaceStock().filter(a=>a.statut==='Vendu'),ap=teamContributions(teamMember)+BUD.apports.filter(inWorkspace).reduce((s,x)=>s+x.montant,0),ve=budgetOption('ventes')?V.reduce((s,a)=>s+a.vendu,0):0,sm=st=>BUD.depenses.filter(x=>inWorkspace(x) && x.statut===st).reduce((s,x)=>s+x.montant,0),rec=sm('Reçu'),route=sm('En route'),env=sm('Envie'),solde=ap+ve-rec-route;return{ap,ve,rec,route,env,solde,apres:solde-env}}
 const isMois=t=>{const d=new Date(t),n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear()};
 function budget(){const o=$('b-out');if(uid&&!BLOADED){if(bTry){bTry=false;o.innerHTML=`<div class='card vide'>Budget indisponible pour le moment (hors ligne ?).</div>`;return}bTry=true;loadBud().then(budget);return}
- const s=bstat(),D=BUD.depenses,cap=BUD.plafond||0,mp=D.filter(x=>x.statut!=='Envie'&&isMois(x.date)).reduce((t,x)=>t+x.montant,0),
+ const s=bstat(),D=BUD.depenses.filter(inWorkspace),cap=budgetOption('plafond'),mp=D.filter(x=>x.statut!=='Envie'&&isMois(x.date)).reduce((t,x)=>t+x.montant,0),
   item=x=>{const j=x.livraison?Math.ceil((new Date(x.livraison)-Date.now())/864e5):null,l=j===null||x.statut==='Reçu'?'':j<0?`<span class='bad'>en retard de ${-j} j</span>`:j===0?`<span class='ok'>aujourd’hui</span>`:`livraison dans ${j} j`,act={Envie:`<button class='btn p' onclick='bMove(${x.id},1)'>Acheté</button>`,'En route':`<button class='btn p' onclick='bMove(${x.id},2)'>Reçu</button>`,'Reçu':`<button class='btn p' onclick='bStock(${x.id})'>Créer l’article</button>`}[x.statut];return `<div class='bi'><b>${esc(x.label)}</b><div class='pr'>${eur(x.montant)}${x.plat?' · '+esc(x.plat):''}${l?' · '+l:''}</div><div class='ac' style='margin-top:10px'>${act}<button class='btn s p' onclick='bDel(${x.id})'>Suppr.</button></div></div>`},
   col=(t,k)=>{const L=D.filter(x=>x.statut===k);return `<div class='col'><h3>${t} · ${eur(L.reduce((a,x)=>a+x.montant,0))}</h3>${L.length?L.slice().reverse().map(item).join(''):`<div class='pr'>Rien ici</div>`}</div>`},
-  ap=BUD.apports.slice().reverse().slice(0,5).map(x=>`<div class='hb' style='grid-template-columns:1fr auto auto'><span>${esc(x.label)}</span><span class='pr'>${eur(x.montant)}</span><button class='btn s p' onclick='bApDel(${x.id})' aria-label='Supprimer'>×</button></div>`).join('');
+  ap=BUD.apports.filter(inWorkspace).slice().reverse().slice(0,5).map(x=>`<div class='hb' style='grid-template-columns:1fr auto auto'><span>${esc(x.label)}</span><span class='pr'>${eur(x.montant)}</span><button class='btn s p' onclick='bApDel(${x.id})' aria-label='Supprimer'>×</button></div>`).join('');
  o.innerHTML=`<div class='card'><h3>Solde disponible</h3><div class='big ${s.solde>=0?'ok':'bad'}'>${eur(s.solde)}</div><div class='pr'>Apports ${eur(s.ap)} + ventes ${eur(s.ve)} − dépensé ${eur(s.rec)} − en route ${eur(s.route)}</div><div class='row' style='margin-top:12px' id='b-v'></div></div>
  <div class='g3'><div class='card'><h3>Dépensé (reçu)</h3><div class='big' style='font-size:28px'>${eur(s.rec)}</div></div><div class='card'><h3>En route (payé, pas reçu)</h3><div class='big' style='font-size:28px'>${eur(s.route)}</div></div><div class='card'><h3>Envies</h3><div class='big' style='font-size:28px'>${eur(s.env)}</div><div class='pr'>Reste après envies : <b class='${s.apres>=0?'ok':'bad'}'>${eur(s.apres)}</b></div></div></div>
  <div class='card'><h3>Plafond de dépenses du mois</h3><div class='row' style='align-items:center'><input id='b-cap' type='number' min='0' value='${cap||''}' placeholder='ex : 100 (€)' style='max-width:200px' onchange='bCap(this.value)'><span class='pr'>${cap?eur(mp)+' dépensés sur '+eur(cap):'Facultatif : le site te prévient quand tu approches de ta limite'}</span></div><div class='bar'><i style='width:${cap?Math.min(100,mp/cap*100):0}%'></i></div></div>
- <div class='g2'><div class='card'><h2>Ajouter de l’argent</h2><label>Libellé</label><input id='b-al' placeholder='Apport, cadeau...'><label for='b-owner'>Apport de</label><select id='b-owner'><option>En commun</option><option>Gatien</option><option>Jules</option></select><label>Montant (€)</label><input id='b-am' type='number' step='0.01' min='0'><button class='btn' onclick='bApp()'>Ajouter</button><button class='btn s' onclick='openTeam(&quot;&quot;)'>Tous les apports</button><div style='margin-top:12px'>${ap}</div></div>
- <div class='card'><h2>Nouvelle dépense ou envie</h2><label>Article</label><input id='b-l'><div class='g2'><div><label>Montant (€)</label><input id='b-m' type='number' step='0.01' min='0'></div><div><label>Plateforme ou vendeur</label><input id='b-p'></div></div><label>Livraison prévue (facultatif)</label><input id='b-d' type='date'><span class='lb'>Statut</span><div class='row' id='b-s'></div><button class='btn' onclick='bAdd()'>Ajouter</button></div></div>
+ <div class='g2'><div class='card'><h2>Ajouter de l’argent</h2><label>Libellé</label><input id='b-al' placeholder='Apport, cadeau...'><label for='b-owner'>Apport de</label><select id='b-owner'><option>En commun</option><option>Gatien</option><option>Jules</option></select><label>Montant (€)</label><input id='b-am' type='number' step='0.01' min='0'><button class='btn' onclick='bApp()'>Ajouter</button><button class='btn s' onclick='openTeam(teamMember)'>Tous les apports</button><div style='margin-top:12px'>${ap}</div></div>
+ <div class='card'><h2>Nouvelle dépense ou envie</h2><label>Article</label><input id='b-l'><label for='expense-owner'>Dépense de</label><select id='expense-owner'><option value=''>En commun</option><option>Gatien</option><option>Jules</option></select><div class='g2'><div><label>Montant (€)</label><input id='b-m' type='number' step='0.01' min='0'></div><div><label>Plateforme ou vendeur</label><input id='b-p'></div></div><label>Livraison prévue (facultatif)</label><input id='b-d' type='date'><span class='lb'>Statut</span><div class='row' id='b-s'></div><button class='btn' onclick='bAdd()'>Ajouter</button></div></div>
  <div class='kan'>${col('Envies','Envie')}${col('En route','En route')}${col('Reçus','Reçu')}</div>`;
- chips('b-s',['Envie','En route','Reçu'],()=>S.bs,v=>S.bs=v);chips('b-v',['Inclure mes ventes','Sans mes ventes'],()=>BUD.ventes?'Inclure mes ventes':'Sans mes ventes',v=>{BUD.ventes=v==='Inclure mes ventes';bsave();budget()})}
-function bAdd(){const l=$('b-l').value.trim(),m=parseFloat($('b-m').value);if(!l||!(m>0)){toast('Indique l’article et un montant');return}BUD.depenses.push({id:Date.now(),label:l,montant:m,plat:$('b-p').value.trim(),statut:S.bs,date:Date.now(),livraison:$('b-d').value||''});bsave();toast('Ajouté');budget()}
-function bApp(){const l=$('b-al').value.trim()||'Apport',m=parseFloat($('b-am').value);if(!(m>0)){toast('Indique un montant');return}BUD.apports.push({id:Date.now(),label:l,montant:m,date:Date.now()});bsave();budget()}
+ $('expense-owner').value=teamMember; $('expense-owner').disabled=!!teamMember; $('b-owner').value=teamMember || 'En commun'; $('b-owner').disabled=!!teamMember;
+ chips('b-s',['Envie','En route','Reçu'],()=>S.bs,v=>S.bs=v);chips('b-v',['Inclure mes ventes','Sans mes ventes'],()=>budgetOption('ventes')?'Inclure mes ventes':'Sans mes ventes',v=>{BUD[budgetKey('ventes')]=v==='Inclure mes ventes';bsave();budget()})}
+function uniqueExpenseId(){let id=Date.now();while(BUD.depenses.some(x=>x.id===id))id++;return id;}
+function bAdd(){const l=$('b-l').value.trim(),m=parseFloat($('b-m').value);if(!l||!(m>0)){toast('Indique l’article et un montant');return}BUD.depenses.push({member:teamMember || $('expense-owner').value,id:uniqueExpenseId(),label:l,montant:m,plat:$('b-p').value.trim(),statut:S.bs,date:Date.now(),livraison:$('b-d').value||''});bsave();toast('Ajouté');budget()}
+function bApp(){const l=$('b-al').value.trim()||'Apport',m=parseFloat($('b-am').value);if(!(m>0)){toast('Indique un montant');return}BUD.apports.push({member:teamMember,id:Date.now(),label:l,montant:m,date:Date.now()});bsave();budget()}
 function bMove(id,k){const x=BUD.depenses.find(y=>y.id===id);x.statut=['Envie','En route','Reçu'][k];if(k===1)x.date=Date.now();bsave();budget()}
 function bDel(id){if(!confirm('Supprimer cette ligne ?'))return;BUD.depenses=BUD.depenses.filter(y=>y.id!==id);bsave();budget()}
 function bApDel(id){BUD.apports=BUD.apports.filter(y=>y.id!==id);bsave();budget()}
-function bCap(v){BUD.plafond=parseFloat(v)||0;bsave();budget()}
-function bStock(id){const x=BUD.depenses.find(y=>y.id===id);reset();$('nom').value=x.label;$('achat').value=x.montant;if(x.plat)$('source').value=x.plat;calc('achat');go('new')}
+function bCap(v){BUD[budgetKey('plafond')]=parseFloat(v)||0;bsave();budget()}
+function bStock(id){const x=BUD.depenses.find(y=>y.id===id);reset();setArticleOwner(x.member);$('nom').value=x.label;$('achat').value=x.montant;if(x.plat)$('source').value=x.plat;calc('achat');go('new')}
 function overview(articles) {
   const now = new Date();
   const days = Number($('volume-period').value);
@@ -437,7 +525,7 @@ function overview(articles) {
   svg.onpointermove=track; svg.onpointerdown=track; svg.onpointerleave=hide;
   svg.onfocus=()=>select(selected); svg.onblur=hide;
   svg.onkeydown=e=>{ if (['ArrowLeft','ArrowRight'].includes(e.key)) { e.preventDefault(); select(selected+(e.key==='ArrowRight'?1:-1)); } };
-  $('volume-period').onchange=()=>overview(Store.all());
+  $('volume-period').onchange=()=>{stopCounters();overview(workspaceStock());animateCounters();};
   const colors=['#7153ed','#41a2cd','#48aba2'];
   $('overview-stock').innerHTML='<div class="status-track">'+counts.map((n,i)=>`<i style="width:${100*n/(articles.length||1)}%;background:${colors[i]}"></i>`).join('')+'</div>'+statuses.map((s,i)=>`<p><i style="background:${colors[i]}"></i>${s}<b>${counts[i]}</b></p>`).join('');
 }

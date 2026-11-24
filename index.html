@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fusiona">
 <meta name="theme-color" content="#6348cf">
-<link rel="stylesheet" href="style.css?v=atelier-2">
-<link rel="stylesheet" href="dashboard.css?v=atelier-2">
+<link rel="stylesheet" href="style.css?v=espaces-1">
+<link rel="stylesheet" href="dashboard.css?v=espaces-1">
 <script>if (localStorage.getItem('fusiona-theme') !== 'sombre') document.documentElement.dataset.theme = 'clair';</script>
 </head>
 <body>
@@ -20,7 +20,7 @@
     <button id="n-new" onclick="go('new')">Nouvel article</button>
     <button id="n-stock" onclick="go('stock')">Mon stock</button>
   </nav>
-  <div class="row"><button class="ic" onclick="theme()" aria-label="Changer de thème">◐</button></div>
+  <div class="row"><button class="ic" id="motion-toggle" aria-label="Forcer les animations" aria-pressed="false">✦</button><button class="ic" id="sound-toggle" aria-label="Son des compteurs" aria-pressed="false">♪</button><button class="ic" onclick="theme()" aria-label="Changer de thème">◐</button></div>
 </header>
 <main>
 <div class="workspace-bar"><button class="stock-link" onclick="go('stock'); document.getElementById('q').focus()">⌕　Rechercher dans mon stock</button>
@@ -62,6 +62,7 @@
   <div class="entry-layout">
   <div class="card">
     <h2 id="f-titre">Nouvel article</h2>
+    <label for="article-member">Stock de</label><select id="article-member"><option value="">En commun</option><option>Gatien</option><option>Jules</option></select>
     <span class="lb">Informations générales</span>
     <div class="g2">
       <div><label>Article (jean, pull, iPhone...)</label><input id="nom" placeholder="jean"><div class="em" id="e-nom"></div></div>
@@ -136,7 +137,7 @@
       <form id="team-money"><label for="money-owner">Apport de</label><select id="money-owner"><option value="">En commun</option><option>Gatien</option><option>Jules</option></select>
       <label for="money-value">Montant (€)</label><input required min="0.01" max="99999999" step="0.01" type="number" id="money-value">
       <label for="money-label">Libellé</label><input id="money-label" maxlength="180" placeholder="Apport"><button class="btn">Enregistrer l’apport</button></form>
-      <div id="team-ledger"></div><button class="btn s p" onclick="go('budget')">Ouvrir le budget commun</button>
+      <div id="team-ledger"></div><button class="btn s p" onclick="go('budget')">Ouvrir le budget</button>
     </section>
   </div>
 </section>
@@ -148,7 +149,7 @@
   <div class="preview-metric"><span>Bénéfice réalisé</span><b id="sale-profit"></b></div>
   <button class="btn">Confirmer la vente</button><button class="btn s" type="button" onclick="document.getElementById('sale-dialog').close()">Annuler</button>
 </form></dialog>
-<script src="app.js?v=atelier-2"></script>
-<script src="equipe.js?v=atelier-2"></script>
+<script src="app.js?v=espaces-1"></script>
+<script src="equipe.js?v=espaces-1"></script>
 </body>
 </html>
