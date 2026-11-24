@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fusiona">
 <meta name="theme-color" content="#6348cf">
-<link rel="stylesheet" href="style.css?v=atelier-2">
-<link rel="stylesheet" href="dashboard.css?v=atelier-2">
+<link rel="stylesheet" href="style.css?v=compteurs-1">
+<link rel="stylesheet" href="dashboard.css?v=compteurs-1">
 <script>if (localStorage.getItem('fusiona-theme') !== 'sombre') document.documentElement.dataset.theme = 'clair';</script>
 </head>
 <body>
@@ -20,7 +20,7 @@
     <button id="n-new" onclick="go('new')">Nouvel article</button>
     <button id="n-stock" onclick="go('stock')">Mon stock</button>
   </nav>
-  <div class="row"><button class="ic" onclick="theme()" aria-label="Changer de thème">◐</button></div>
+  <div class="row"><button class="ic" id="motion-toggle" aria-label="Forcer les animations" aria-pressed="false">✦</button><button class="ic" id="sound-toggle" aria-label="Son des compteurs" aria-pressed="false">♪</button><button class="ic" onclick="theme()" aria-label="Changer de thème">◐</button></div>
 </header>
 <main>
 <div class="workspace-bar"><button class="stock-link" onclick="go('stock'); document.getElementById('q').focus()">⌕　Rechercher dans mon stock</button>
@@ -148,7 +148,7 @@
   <div class="preview-metric"><span>Bénéfice réalisé</span><b id="sale-profit"></b></div>
   <button class="btn">Confirmer la vente</button><button class="btn s" type="button" onclick="document.getElementById('sale-dialog').close()">Annuler</button>
 </form></dialog>
-<script src="app.js?v=atelier-2"></script>
-<script src="equipe.js?v=atelier-2"></script>
+<script src="app.js?v=compteurs-1"></script>
+<script src="equipe.js?v=compteurs-1"></script>
 </body>
 </html>

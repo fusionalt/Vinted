@@ -179,13 +179,15 @@ input, textarea { background: var(--s); }
 .team-line span{font-size:13px;color:var(--m)}.team-line>button{justify-self:start}
 @media(max-width:760px){.team-grid{grid-template-columns:minmax(0,1fr)}.workspace-bar{flex-wrap:wrap;gap:0;padding-bottom:10px}.workspace-bar .stock-link{flex-basis:100%}}
 *,*::before,*::after{animation:none!important;transition:none;scroll-behavior:auto!important}
-@media(prefers-reduced-motion:no-preference){
-  .btn,.chip,nav button,#team-switch button,.drop,input,select{transition:background-color .15s,color .15s,border-color .15s,box-shadow .15s}
-  .it .ph img{transition:transform .22s ease-out}.it:hover .ph img{transform:scale(1.025)!important}
-  #toast{transition:opacity .16s,transform .16s}.hb i,.bar i,#obj-b{transition:width .35s ease-out}
-  .chip:active,.btn:active{transform:scale(.98)!important}.btn,.chip{transition:transform .12s,background-color .15s,color .15s}
-  .chip.on:focus{animation:select-chip .18s ease-out!important}
-}
+:where(html[data-motion="on"]) .btn,:where(html[data-motion="on"]) .chip,:where(html[data-motion="on"]) nav button,:where(html[data-motion="on"]) #team-switch button,:where(html[data-motion="on"]) .drop,:where(html[data-motion="on"]) input,:where(html[data-motion="on"]) select{transition:background-color .15s,color .15s,border-color .15s,box-shadow .15s}
+:where(html[data-motion="on"]) .it .ph img{transition:transform .22s ease-out}
+:where(html[data-motion="on"]) .it:hover .ph img{transform:scale(1.025)!important}
+:where(html[data-motion="on"]) #toast{transition:opacity .16s,transform .16s}
+:where(html[data-motion="on"]) .hb i,:where(html[data-motion="on"]) .bar i,:where(html[data-motion="on"]) #obj-b{transition:width .35s ease-out}
+:where(html[data-motion="on"]) .chip:active,:where(html[data-motion="on"]) .btn:active{transform:scale(.98)!important}
+:where(html[data-motion="on"]) .btn,:where(html[data-motion="on"]) .chip{transition:transform .12s,background-color .15s,color .15s}
+:where(html[data-motion="on"]) .chip.on:focus{animation:select-chip .18s ease-out!important}
+header .ic[aria-pressed="true"]{background:var(--active);color:var(--accent);border-color:var(--accent)}
 @keyframes select-chip{from{box-shadow:0 0 0 3px var(--active)}to{box-shadow:0 0 0 0 transparent}}
 #p-new{max-width:1120px}.entry-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(235px,1fr);gap:20px;align-items:start}
 .listing-preview{position:sticky;top:18px}.preview-cover{aspect-ratio:4/3;background:var(--s2);border:1px solid var(--l);border-radius:9px;display:grid;place-items:center;overflow:hidden;color:var(--m);font-size:13px}

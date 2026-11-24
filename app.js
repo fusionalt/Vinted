@@ -3,6 +3,79 @@ const $=i=>document.getElementById(i),eur=n=>(Math.round(n*100)/100).toFixed(2).
 const S={cat:'Tous',st:'Tous',tri:'Plus récents',vue:'Cartes',per:'6 mois',edit:null,photos:[],fc:CATS[0],fe:ETATS[1],busy:false};
 
 /* ---- Couche données : seul ce bloc changera quand on branchera les comptes ---- */
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+let forceMotion=localStorage.getItem('fusiona-anim')==='on';
+let counterSound=localStorage.getItem('fusiona-counter-sound')==='on';
+let audioContext=null, lastTone=-Infinity, counterFrame=0, finishCounters=null;
+function stopCounters(){
+  cancelAnimationFrame(counterFrame);
+  if(finishCounters) finishCounters();
+  finishCounters=null;
+}
+function updateControls(){
+  const root=document.documentElement;
+  root.dataset.anim=forceMotion?'on':'';
+  root.dataset.motion=(forceMotion || !reducedMotion.matches)?'on':'off';
+  $('motion-toggle').setAttribute('aria-pressed',String(forceMotion));
+  $('motion-toggle').title=forceMotion?'Animations forcées · revenir au réglage système':'Forcer les animations sur cet appareil';
+  $('sound-toggle').setAttribute('aria-pressed',String(counterSound));
+  $('sound-toggle').title=counterSound?'Couper le son des compteurs':'Activer le son discret des compteurs';
+  if(root.dataset.motion==='off') stopCounters();
+}
+function prepareSound(){
+  if(!counterSound || document.hidden || document.documentElement.dataset.motion!=='on')return;
+  try{
+    const Audio=window.AudioContext || window.webkitAudioContext;
+    if(!Audio)return;
+    audioContext ||= new Audio();
+    if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
+  }catch{}
+}
+function playCounterTone(){
+  if(!counterSound || document.hidden || audioContext?.state!=='running' || performance.now()-lastTone<4000)return;
+  lastTone=performance.now();
+  const t=audioContext.currentTime, tone=audioContext.createOscillator(), gain=audioContext.createGain();
+  tone.type='sine'; tone.frequency.setValueAtTime(550,t); tone.frequency.exponentialRampToValueAtTime(660,t+.09);
+  gain.gain.setValueAtTime(.0001,t); gain.gain.exponentialRampToValueAtTime(.025,t+.016);
+  gain.gain.exponentialRampToValueAtTime(.0001,t+.13);
+  tone.connect(gain);gain.connect(audioContext.destination);tone.onended=()=>{tone.disconnect();gain.disconnect();};
+  tone.start(t);tone.stop(t+.14);
+}
+function animateCounters(){
+  stopCounters();
+  if(document.documentElement.dataset.motion!=='on' || document.hidden)return;
+  const elements=[...document.querySelectorAll('#volume-total,#kpis .kpi b')];
+  const counters=elements.flatMap(node=>{
+    const label=node.textContent, match=label.match(/^(-?\d+)(,\d+)?( €| %| j)$/);
+    if(!match)return [];
+    const number=Number((match[1]+(match[2]||'')).replace(',','.'));
+    return number?[{node,label,number,digits:(match[2]?.length||1)-1,unit:match[3]}]:[];
+  });
+  if(!counters.length)return;
+  prepareSound();
+  finishCounters=()=>counters.forEach(c=>{c.node.textContent=c.label;});
+  const start=performance.now();
+  function draw(now){
+    const p=Math.min(1,(now-start)/420), fraction=1-(1-p)**3;
+    for(const c of counters)c.node.textContent=(c.number*fraction).toFixed(c.digits).replace('.',',')+c.unit;
+    if(p<1)counterFrame=requestAnimationFrame(draw);
+    else {stopCounters();playCounterTone();}
+  }
+  counterFrame=requestAnimationFrame(draw);
+}
+$('motion-toggle').onclick=()=>{
+  forceMotion=!forceMotion;localStorage.setItem('fusiona-anim',forceMotion?'on':'off');updateControls();
+  toast(forceMotion?'Animations forcées':'Animations selon le réglage système');
+  if(forceMotion && document.body.dataset.pg==='dash')animateCounters();
+};
+$('sound-toggle').onclick=()=>{
+  counterSound=!counterSound;localStorage.setItem('fusiona-counter-sound',counterSound?'on':'off');updateControls();
+  prepareSound();toast(counterSound?'Son discret activé':'Son coupé');
+};
+reducedMotion.addEventListener('change',updateControls);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCounters();});
+updateControls();
+
 const Store={
  all(){try{let d=JSON.parse(localStorage.getItem(K));if(d)return d;d=JSON.parse(localStorage.getItem('vinted-stock-v2')||'[]').map(a=>({id:a.id,nom:a.titre,marque:a.marque||'',taille:'',couleur:'',details:'',cat:a.type==='Chaussures'?'Chaussures':'Vêtements',etat:'',achat:a.achat,frais:0,prix:a.prix,photos:a.photo?[a.photo]:[],statut:a.statut,vendu:a.vendu,ajout:a.dateAjout||a.id,vente:a.dateVente}));this.set(d);return d}catch(e){return[]}},
  set(d){try{localStorage.setItem(K,JSON.stringify(d));return true}catch(e){toast('Espace plein : supprime des photos');return false}}
@@ -109,7 +182,7 @@ async function imp(event){
 
 /* ---- Tableau de bord ---- */
 function hbars(id,rows){const z=$(id),m=Math.max(1,...rows.map(r=>Math.abs(r[1])));z.innerHTML=rows.length?rows.map((r,i)=>`<div class="hb"><span>${esc(r[0])}</span><div><i style="width:0;background:${r[1]<0?'var(--bad)':COL[i%5]}" data-w="${Math.abs(r[1])/m*100}"></i></div><b>${r[2]}</b></div>`).join(''):'<div class="vide">Pas encore de données</div>';requestAnimationFrame(()=>requestAnimationFrame(()=>z.querySelectorAll('i').forEach(i=>i.style.width=i.dataset.w+'%')))}
-function dash(){const d=Store.all(),V=d.filter(a=>a.statut==='Vendu'),E=d.filter(a=>a.statut!=='Vendu'),sum=(x,f)=>x.reduce((s,a)=>s+f(a),0);
+function dash(){stopCounters();const d=Store.all(),V=d.filter(a=>a.statut==='Vendu'),E=d.filter(a=>a.statut!=='Vendu'),sum=(x,f)=>x.reduce((s,a)=>s+f(a),0);
  const ca=sum(V,a=>a.vendu),ben=ca-sum(V,a=>cout(a)),vs=sum(E,a=>cout(a)),vp=sum(E,a=>a.prix),mm=V.length?Math.round(sum(V,a=>a.vendu/cout(a)-1)/V.length*100):0,dur=V.length?Math.round(sum(V,a=>(a.vente-a.ajout)/864e5)/V.length):0;
  const K2=[['Chiffre d\'affaires',eur(ca),''],['Bénéfice net',eur(ben),ben<0?'bad':'ok'],['Valeur du stock (achat)',eur(vs),''],['Valeur potentielle',eur(vp),''],['En stock / vendus',E.length+' / '+V.length,''],['Marge moyenne',mm+' %',''],['Rentabilité',ca?Math.round(ben/sum(V,a=>cout(a))*100)+' %':'0 %',''],['Durée moyenne de stockage',dur+' j','']];
  $('kpis').innerHTML=K2.map((k,i)=>`<div class="card kpi ${''}" style="animation-delay:${i*60}ms"><small>${k[0]}</small><b class="${k[2]}">${k[1]}</b></div>`).join('');
@@ -282,6 +355,8 @@ mk('budget',`<div id='b-out'></div>`);
 const nbb=document.createElement('button');nbb.id='n-budget';nbb.textContent='Budget';nbb.onclick=()=>go('budget');navEl.appendChild(nbb);
 const _go2=go;
 go=function(p){
+  const entering=p==='dash' && document.body.dataset.pg!=='dash';
+  stopCounters();
   document.body.dataset.pg=p;
   _go2(p);
   const b=p==='budget';
@@ -289,6 +364,7 @@ go=function(p){
   $('n-budget').classList.toggle('on',b);
   if(b) budget();
   if(typeof teamPage !== 'undefined') teamPage(p);
+  if(entering)animateCounters();
 };
 const HERO={dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
 document.querySelectorAll('.pg').forEach(s=>{const h=HERO[s.id.slice(2)];if(h){const d=document.createElement('div');d.className='hero';d.innerHTML=`<h1>${h[0]}</h1><p>${h[1]}</p>`;s.prepend(d)}});
@@ -437,7 +513,7 @@ function overview(articles) {
   svg.onpointermove=track; svg.onpointerdown=track; svg.onpointerleave=hide;
   svg.onfocus=()=>select(selected); svg.onblur=hide;
   svg.onkeydown=e=>{ if (['ArrowLeft','ArrowRight'].includes(e.key)) { e.preventDefault(); select(selected+(e.key==='ArrowRight'?1:-1)); } };
-  $('volume-period').onchange=()=>overview(Store.all());
+  $('volume-period').onchange=()=>{stopCounters();overview(Store.all());animateCounters();};
   const colors=['#7153ed','#41a2cd','#48aba2'];
   $('overview-stock').innerHTML='<div class="status-track">'+counts.map((n,i)=>`<i style="width:${100*n/(articles.length||1)}%;background:${colors[i]}"></i>`).join('')+'</div>'+statuses.map((s,i)=>`<p><i style="background:${colors[i]}"></i>${s}<b>${counts[i]}</b></p>`).join('');
 }
