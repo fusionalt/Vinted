@@ -1,11 +1,39 @@
-const C='fusiona-v1',SHELL=['./','index.html','style.css','app.js','manifest.json'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
-self.addEventListener('fetch',e=>{
-  const r=e.request,u=new URL(r.url);
-  if(r.method!=='GET'||u.hostname.endsWith('supabase.co'))return;
-  const keep=x=>{const y=x.clone();caches.open(C).then(c=>c.put(r,y));return x};
-  e.respondWith(u.origin===location.origin
-    ? fetch(r).then(keep).catch(()=>caches.match(r).then(m=>m||caches.match('index.html')))
-    : caches.match(r).then(m=>m||fetch(r).then(keep)));
+const prefix = 'fusiona-' + self.registration.scope + '-';
+const cacheName = prefix + 'dashboard-v1';
+const files = ['./', 'index.html', 'style.css', 'dashboard.css', 'app.js', 'manifest.json'];
+const shell = new Set(files.map(file => new URL(file, self.registration.scope).href));
+
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(cacheName);
+    await cache.addAll(files.map(file => new Request(new URL(file, self.registration.scope), { cache: 'reload' })));
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    for (const key of await caches.keys()) {
+      if (key.startsWith(prefix) && key !== cacheName) await caches.delete(key);
+    }
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const sdk = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+  if (request.method !== 'GET' || !(shell.has(request.url) || request.url === sdk)) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(cacheName);
+    try {
+      const response = await fetch(request);
+      if (response.ok || response.type === 'opaque') await cache.put(request, response.clone());
+      return response;
+    } catch (error) {
+      const saved = await cache.match(request);
+      if (saved) return saved;
+      throw error;
+    }
+  })());
 });
