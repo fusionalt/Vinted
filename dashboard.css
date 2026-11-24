@@ -1,21 +1,39 @@
 /* Palette et surfaces */
-.radar-layout { display:grid; grid-template-columns:minmax(145px,190px) minmax(0,1fr); gap:16px; align-items:start; }
-#radar-brands { display:grid; gap:3px; }
-#radar-brands button { text-align:left; }
-#p-radar select { display:block; width:100%; padding:11px; background:var(--s); color:var(--t); border:1px solid var(--l); border-radius:9px; }
-#p-radar a { color:var(--accent); font-weight:600; }
-#p-radar summary { cursor:pointer; }
-#radar-search { display:inline-block; margin-top:10px; }
-#radar-feed {display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,248px),1fr));gap:14px}
-#radar-feed .radar-listing {position:relative;isolation:isolate;overflow:hidden;aspect-ratio:3/4;max-width:400px;width:100%;margin:0;padding:0;border-radius:17px;background:#333738;color:#fff}
-.radar-listing img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-#radar-feed .radar-example {background:#464744 url('exemple-ralph-lauren.png') center 34% / 111% auto no-repeat}
-.radar-example > small {position:absolute;top:12px;left:12px;padding:4px 8px;border-radius:20px;background:#222c;color:white}
-.listing-overlay {position:absolute;inset:auto 0 0;padding:42px 66px 15px 15px;background:linear-gradient(transparent,#131414df 42%,#121313f5);font-size:12px}
-.listing-overlay h3 {color:white;text-transform:none;letter-spacing:0;font-size:15px;margin:4px 0}
-.listing-overlay strong {font-size:22px}.listing-overlay small {font-size:11px}.listing-overlay strong + small {color:#dfff83}
-.listing-tags {display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.listing-tags span {padding:4px 7px;border-radius:20px;background:#FFFFFF26}
-#p-radar .listing-overlay a {position:absolute;bottom:15px;right:13px;border-radius:50%;background:#d6ff45;color:#182000;text-decoration:none;display:grid;place-items:center;width:43px;height:43px;font-size:21px}
+.fusion-passage {
+  pointer-events:none; position:fixed; inset:0 0 0 auto; z-index:45;
+  overflow:hidden; isolation:isolate; contain:strict;
+}
+.fusion-trail { position:absolute; inset:0; }
+.fusion-passage.reverse .fusion-trail { transform:scaleX(-1); }
+.fusion-trail i { position:absolute; inset:0; animation:fusion-cut 590ms cubic-bezier(.58,.03,.36,1) both; }
+.fusion-trail i:nth-child(1) { background:#a58af2; }
+.fusion-trail i:nth-child(2) { background:linear-gradient(108deg,#392979 15%,#7454cd 58%,#c4afff); animation-delay:32ms; }
+.fusion-trail i:nth-child(3) { background:linear-gradient(108deg,#201836,#4a367b 60%,#7356b5); animation-delay:65ms; }
+.fusion-mark {
+  position:absolute; left:50%; top:45%; width:42px; height:42px;
+  animation:fusion-emblem 710ms both; color:#fcfaff;
+}
+.fusion-mark > * { position:absolute; inset:0; border:1px solid currentColor; transform:rotate(45deg); }
+.fusion-mark i { animation:fusion-orbit 545ms 75ms both; }
+.fusion-mark i:nth-child(2) { animation-delay:135ms; }
+.fusion-mark b { inset:9px; background:currentColor; box-shadow:0 0 22px #d6c5ff85; }
+@keyframes fusion-cut {
+  0% {clip-path:polygon(-45% 0,-30% 0,-55% 100%,-70% 100%)}
+  40% {clip-path:polygon(-20% 0,115% 0,87% 100%,-48% 100%)}
+  56% {clip-path:polygon(6% 0,148% 0,120% 100%,-22% 100%)}
+  100% {clip-path:polygon(152% 0,170% 0,142% 100%,124% 100%)}
+}
+@keyframes fusion-emblem {
+  0%,18% {opacity:0; transform:translate(-50%,-50%) scale(.58) rotate(-40deg)}
+  38%,57% {opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0)}
+  79%,100% {opacity:0; transform:translate(-50%,-50%) scale(1.18) rotate(42deg)}
+}
+@keyframes fusion-orbit {
+  0% {opacity:0;transform:rotate(10deg) scale(.6)}
+  38% {opacity:.85}
+  100% {opacity:0;transform:rotate(95deg) scale(2.1)}
+}
+@media(prefers-reduced-motion:reduce){html:not([data-anim=on]) .fusion-passage{display:none}}
 .activity-chart {position:relative;margin-bottom:24px;border-bottom:1px solid var(--l);padding-bottom:12px}
 .chart-key {display:flex;gap:16px;color:var(--m);font-size:12px}
 .chart-key span::before {content:'';display:inline-block;width:14px;border-top:2px solid var(--accent);margin-right:5px;vertical-align:middle}
@@ -36,7 +54,6 @@
 #overview-stock p {display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--l);padding-bottom:9px;font-size:13px}
 #overview-stock p i {width:9px;height:9px;border-radius:3px}#overview-stock b {margin-left:auto}
 @media(max-width:760px){.overview-grid{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:760px){.radar-layout{grid-template-columns:minmax(0,1fr)}#radar-brands{display:flex;overflow:auto}#radar-brands button{flex:none}.radar-layout aside{margin:0}}
 :root {
   --accent: #b8adff;
   --rail: #191925;

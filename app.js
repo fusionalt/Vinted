@@ -235,7 +235,41 @@ addEventListener('beforeunload',e=>{if(GUEST&&MEM.length){e.preventDefault();e.r
 const newBud=()=>({apports:[],depenses:[],plafond:0,ventes:true});let BUD=newBud(),bq=null,BLOADED=false,bTry=false;S.bs='Envie';
 mk('budget',`<div id='b-out'></div>`);
 const nbb=document.createElement('button');nbb.id='n-budget';nbb.textContent='Budget';nbb.onclick=()=>go('budget');navEl.appendChild(nbb);
-const _go2=go;go=function(p){document.body.dataset.pg=p;_go2(p);const b=p==='budget';$('p-budget').classList.toggle('on',b);$('n-budget').classList.toggle('on',b);if(b)budget()};
+const _go2=go;
+let passage=null;
+function animateNavigation(from,to){
+  passage?.remove();
+  passage=null;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches && document.documentElement.dataset.anim!=='on') return;
+  const navButtons=Array.from(navEl.querySelectorAll('button'));
+  const backwards=navButtons.indexOf($('n-'+to))<navButtons.indexOf($('n-'+from));
+  const panel=document.createElement('div');
+  panel.className='fusion-passage'+(backwards?' reverse':'');
+  panel.setAttribute('aria-hidden','true');
+  const bounds=mainEl.getBoundingClientRect();
+  const header=document.querySelector('header').getBoundingClientRect();
+  panel.style.left=Math.max(0,bounds.left)+'px';
+  panel.style.top=(matchMedia('(max-width:760px)').matches?Math.max(0,header.bottom):0)+'px';
+  panel.innerHTML='<div class="fusion-trail"><i></i><i></i><i></i></div><div class="fusion-mark"><i></i><i></i><b></b></div>';
+  document.body.append(panel);
+  passage=panel;
+  function finish(){
+    panel.remove();
+    if(passage===panel) passage=null;
+  }
+  panel.addEventListener('animationend',event=>{if(event.animationName==='fusion-emblem') finish()});
+  setTimeout(finish,850);
+}
+go=function(p){
+  const from=document.body.dataset.pg;
+  document.body.dataset.pg=p;
+  _go2(p);
+  const b=p==='budget';
+  $('p-budget').classList.toggle('on',b);
+  $('n-budget').classList.toggle('on',b);
+  if(b) budget();
+  if(from && from!==p) animateNavigation(from,p);
+};
 const HERO={dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
 document.querySelectorAll('.pg').forEach(s=>{const h=HERO[s.id.slice(2)];if(h){const d=document.createElement('div');d.className='hero';d.innerHTML=`<h1>${h[0]}</h1><p>${h[1]}</p>`;s.prepend(d)}});
 document.body.dataset.pg='dash';

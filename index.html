@@ -115,31 +115,8 @@
   <p class="note">Pour l'instant, tes données restent dans ce navigateur. La sauvegarde en ligne arrive avec les comptes.</p>
 </section>
 
-<section class="pg" id="p-radar">
-  <div class="hero"><h1>Radar Vinted</h1><p>Les nouvelles annonces de tes marques, par ordre de publication.</p></div>
-  <div class="radar-layout">
-    <aside class="card"><h2>Marques</h2><div id="radar-brands"></div></aside>
-    <div>
-      <div class="card">
-        <h2 id="radar-title">Toutes les marques</h2>
-        <div class="g2">
-          <label>Prix maximum (€)<input id="radar-cap" type="number" min="0" step="0.01" placeholder="Sans limite"></label>
-          <label>Écart minimum au prix de référence<select id="radar-discount"><option value="0">Toutes les annonces</option><option value="30">Au moins 30 %</option><option value="50">Au moins 50 %</option><option value="70">Au moins 70 %</option></select></label>
-        </div>
-        <a id="radar-search" target="_blank" rel="noopener noreferrer">Voir les nouveautés sur Vinted ↗</a>
-        <p class="note" id="radar-status" role="status"></p>
-        <details><summary>Connecter un flux d’annonces</summary>
-          <form id="radar-config"><label for="radar-url">URL publique du flux JSON</label><input id="radar-url" type="url" placeholder="https://…"><button class="btn">Enregistrer la source</button></form>
-          <p class="note">Le flux doit être lisible depuis ce site. Laisse le champ vide pour le déconnecter. Les prix sont en euros, hors frais.</p>
-        </details>
-      </div>
-      <div id="radar-feed"></div>
-    </div>
-  </div>
-</section>
 </main>
 <div id="toast"></div>
 <script src="app.js"></script>
-<script src="radar.js"></script>
 </body>
 </html>
