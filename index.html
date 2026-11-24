@@ -26,6 +26,20 @@
 <button class="stock-link" onclick="go('stock'); document.getElementById('q').focus()">⌕　Rechercher dans mon stock</button>
 
 <section class="pg on" id="p-dash">
+  <section class="activity-chart" aria-label="Ventes cumulées par heure">
+    <h2>Ventes du jour</h2>
+    <div class="chart-key"><span>Aujourd’hui</span><span>Hier</span></div>
+    <div id="hour-chart"></div>
+  </section>
+  <h2 class="overview-title">Votre aperçu</h2>
+  <label class="overview-period">Plage de dates
+    <select id="volume-period"><option value="7">7 derniers jours</option><option value="30">30 derniers jours</option></select>
+  </label>
+  <div class="overview-grid">
+    <section class="card"><h2>Volume brut</h2><strong id="volume-total"></strong><div id="volume-chart"></div></section>
+    <section class="card"><h2>Statuts du stock</h2><div id="overview-stock"></div></section>
+  </div>
+  <div class="g4" id="kpis"></div>
   <div class="card" style="margin-top:16px">
     <div class="row" style="justify-content:space-between;align-items:center">
       <h2 style="margin:0">Ventes et bénéfices</h2>
@@ -33,15 +47,13 @@
     </div>
     <div id="c-mois"></div>
   </div>
-  <h2>Votre aperçu</h2>
-  <div class="g4" id="kpis"></div>
   <div class="g2">
     <div class="card"><h2>Répartition du stock</h2><div id="c-rep"></div></div>
     <div class="card"><h2>Bénéfice par catégorie</h2><div id="c-ren"></div></div>
   </div>
   <div class="card"><h2>Objectif de bénéfice du mois</h2><div class="row" style="align-items:center"><input id="obj" type="number" min="0" placeholder="ex : 200 (€)" style="max-width:200px"><span class="pr" id="obj-t"></span></div><div style="height:12px;background:var(--s2);border-radius:6px;margin-top:12px;overflow:hidden"><i id="obj-b" style="display:block;height:100%;width:0;background:#10b981;border-radius:6px;transition:width .9s var(--e)"></i></div></div>
   <div class="g2"><div class="card"><h2>Bénéfice par marque</h2><div id="c-marque"></div></div><div class="card"><h2>Bénéfice par source d'achat</h2><div id="c-src"></div></div></div>
-  <div class="g2"><div class="card"><h2>Statuts du stock</h2><div id="c-stat"></div></div><div class="card"><h2>Articles qui dorment</h2><div id="c-dorm"></div></div></div>
+  <div class="card"><h2>Articles qui dorment</h2><div id="c-dorm"></div></div>
   <div class="card"><h2>Top des articles les plus rentables</h2><div id="c-top"></div></div>
 </section>
 
@@ -103,8 +115,31 @@
   <p class="note">Pour l'instant, tes données restent dans ce navigateur. La sauvegarde en ligne arrive avec les comptes.</p>
 </section>
 
+<section class="pg" id="p-radar">
+  <div class="hero"><h1>Radar Vinted</h1><p>Les nouvelles annonces de tes marques, par ordre de publication.</p></div>
+  <div class="radar-layout">
+    <aside class="card"><h2>Marques</h2><div id="radar-brands"></div></aside>
+    <div>
+      <div class="card">
+        <h2 id="radar-title">Toutes les marques</h2>
+        <div class="g2">
+          <label>Prix maximum (€)<input id="radar-cap" type="number" min="0" step="0.01" placeholder="Sans limite"></label>
+          <label>Écart minimum au prix de référence<select id="radar-discount"><option value="0">Toutes les annonces</option><option value="30">Au moins 30 %</option><option value="50">Au moins 50 %</option><option value="70">Au moins 70 %</option></select></label>
+        </div>
+        <a id="radar-search" target="_blank" rel="noopener noreferrer">Voir les nouveautés sur Vinted ↗</a>
+        <p class="note" id="radar-status" role="status"></p>
+        <details><summary>Connecter un flux d’annonces</summary>
+          <form id="radar-config"><label for="radar-url">URL publique du flux JSON</label><input id="radar-url" type="url" placeholder="https://…"><button class="btn">Enregistrer la source</button></form>
+          <p class="note">Le flux doit être lisible depuis ce site. Laisse le champ vide pour le déconnecter. Les prix sont en euros, hors frais.</p>
+        </details>
+      </div>
+      <div id="radar-feed"></div>
+    </div>
+  </div>
+</section>
 </main>
 <div id="toast"></div>
 <script src="app.js"></script>
+<script src="radar.js"></script>
 </body>
 </html>
