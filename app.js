@@ -536,3 +536,19 @@ function overview(articles) {
   $('overview-stock').innerHTML='<div class="status-track">'+counts.map((n,i)=>`<i style="width:${100*n/(articles.length||1)}%;background:${colors[i]}"></i>`).join('')+'</div>'+statuses.map((s,i)=>`<p><i style="background:${colors[i]}"></i>${s}<b>${counts[i]}</b></p>`).join('');
 }
 dash();
+const compactNav=matchMedia('(max-width: 1024px)');
+const navToggle=$('nav-toggle');
+function setMenu(open){
+  navToggle.setAttribute('aria-expanded',String(open));
+  navToggle.textContent=open?'× Fermer':'☰ Menu';
+}
+navToggle.onclick=()=>setMenu(navToggle.getAttribute('aria-expanded')!=='true');
+compactNav.addEventListener('change',()=>setMenu(false));
+document.addEventListener('click',event=>{
+  if(compactNav.matches && (event.target.closest('#main-nav button') || !event.target.closest('header')))setMenu(false);
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape' && navToggle.getAttribute('aria-expanded')==='true'){
+    setMenu(false);navToggle.focus();
+  }
+});
