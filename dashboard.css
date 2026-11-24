@@ -204,4 +204,4 @@ header .ic[aria-pressed="true"]{background:var(--active);color:var(--accent);bor
 #team-switch button{color:var(--t);min-height:36px}#team-switch button[aria-pressed=true]{color:var(--accent)}
 #liste .gr{grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr))}#liste .it{width:100%;max-width:380px}
 
-#article-member,#expense-owner{width:100%;padding:10px;border:1px solid var(--l);border-radius:8px;background:var(--s);color:var(--t);font:inherit}#n-team::before{content:'✓'}
+#article-status,#article-member,#expense-owner{width:100%;padding:10px;border:1px solid var(--l);border-radius:8px;background:var(--s);color:var(--t);font:inherit}#n-team::before{content:'✓'}

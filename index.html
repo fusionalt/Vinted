@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fusiona">
 <meta name="theme-color" content="#6348cf">
-<link rel="stylesheet" href="style.css?v=espaces-1">
-<link rel="stylesheet" href="dashboard.css?v=espaces-1">
+<link rel="stylesheet" href="style.css?v=statuts-1">
+<link rel="stylesheet" href="dashboard.css?v=statuts-1">
 <script>if (localStorage.getItem('fusiona-theme') !== 'sombre') document.documentElement.dataset.theme = 'clair';</script>
 </head>
 <body>
@@ -63,6 +63,10 @@
   <div class="card">
     <h2 id="f-titre">Nouvel article</h2>
     <label for="article-member">Stock de</label><select id="article-member"><option value="">En commun</option><option>Gatien</option><option>Jules</option></select>
+    <label for="article-status">Statut de l’article</label>
+    <select id="article-status">
+      <option>En stock</option><option selected>En vente</option><option>Réservé</option><option hidden disabled>Vendu</option>
+    </select>
     <span class="lb">Informations générales</span>
     <div class="g2">
       <div><label>Article (jean, pull, iPhone...)</label><input id="nom" placeholder="jean"><div class="em" id="e-nom"></div></div>
@@ -149,7 +153,7 @@
   <div class="preview-metric"><span>Bénéfice réalisé</span><b id="sale-profit"></b></div>
   <button class="btn">Confirmer la vente</button><button class="btn s" type="button" onclick="document.getElementById('sale-dialog').close()">Annuler</button>
 </form></dialog>
-<script src="app.js?v=espaces-1"></script>
-<script src="equipe.js?v=espaces-1"></script>
+<script src="app.js?v=statuts-1"></script>
+<script src="equipe.js?v=statuts-1"></script>
 </body>
 </html>

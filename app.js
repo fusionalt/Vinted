@@ -107,10 +107,16 @@ const dz=$('drop');dz.onclick=()=>$('file').click();$('file').onchange=e=>{addFi
 function valid(){if(num('frais')<0){toast('Les frais doivent être positifs ou nuls.');$('frais').focus();return false;}let ok=true;[['nom','Indique l\'article'],['marque','Indique la marque'],['achat','Prix d\'achat requis']].forEach(([i,m])=>{const bad=i==='achat'?num(i)===null||num(i)<0:!$(i).value.trim();$(i).classList.toggle('err',bad);$('e-'+i).textContent=bad?m:'';if(bad)ok=false});if(!(num('prix')>0)){toast('Indique un prix voulu ou une marge');ok=false}return ok}
 function read(){return{member:teamMember || $('article-member').value,nom:$('nom').value.trim(),marque:$('marque').value.trim(),taille:$('taille').value.trim(),couleur:$('couleur').value.trim(),details:$('details').value.trim(),location:$('storage-place').value.trim(),cat:S.fc,etat:S.fe,achat:num('achat'),frais:num('frais')||0,prix:num('prix'),photos:S.photos.slice()}}
 function uniqueArticleId(){let id=Date.now();const used=new Set(Store.all().map(a=>a.id));while(used.has(id))id++;return id;}
-function save(){if(S.busy||!valid())return;S.busy=true;$('save').disabled=true;const d=Store.all(),v=read();let ok;if(S.edit){const i=d.findIndex(a=>a.id===S.edit);if(i<0){S.busy=false;$('save').disabled=false;toast('Cet article a été supprimé.');return;}d[i]=Object.assign(d[i],v);ok=Store.set(d)}else{d.push(Object.assign({id:uniqueArticleId(),statut:'En vente',vendu:null,ajout:Date.now(),vente:null},v));ok=Store.set(d)}
+function applyArticleStatus(item,status){
+  if(item.statut==='Vendu') return;
+  if(status==='Réservé' && item.statut!=='Réservé') item.reserve=Date.now();
+  if(status!=='Réservé') item.reserve=null;
+  item.statut=status;
+}
+function save(){if(S.busy||!valid())return;S.busy=true;$('save').disabled=true;const d=Store.all(),v=read();let ok;if(S.edit){const i=d.findIndex(a=>a.id===S.edit);if(i<0){S.busy=false;$('save').disabled=false;toast('Cet article a été supprimé.');return;}applyArticleStatus(d[i],$('article-status').value);d[i]=Object.assign(d[i],v);ok=Store.set(d)}else{const item={id:uniqueArticleId(),vendu:null,ajout:Date.now(),vente:null,...v};applyArticleStatus(item,$('article-status').value);d.push(item);ok=Store.set(d)}
  S.busy=false;$('save').disabled=false;if(!ok)return;toast(S.edit?'Modifications enregistrées':'Article ajouté');reset();go('stock')}
-function reset(){setArticleOwner('');$('storage-place').value='';S.edit=null;S.photos=[];S.fc=CATS[0];S.fe=ETATS[1];['nom','marque','taille','couleur','details','achat','prix'].forEach(i=>{$(i).value='';$(i).classList.remove('err')});$('frais').value=0;$('marge').value=100;$('out').style.display='none';$('f-titre').textContent='Nouvel article';$('save').textContent='Enregistrer dans mon stock';formCats();thumbs();calc('achat')}
-function edit(id){const a=Store.all().find(x=>x.id===id);if(!a)return;reset();setArticleOwner(a.member);$('storage-place').value=a.location||'';S.edit=id;['nom','marque','taille','couleur','details'].forEach(i=>$(i).value=a[i]||'');$('achat').value=a.achat;$('frais').value=a.frais||0;$('prix').value=a.prix;S.fc=a.cat;S.fe=a.etat||ETATS[1];S.photos=(a.photos||[]).slice();$('f-titre').textContent='Modifier l\'article';$('save').textContent='Enregistrer les modifications';formCats();thumbs();calc('prix');go('new')}
+function reset(){$('article-status').value='En vente';$('article-status').disabled=false;setArticleOwner('');$('storage-place').value='';S.edit=null;S.photos=[];S.fc=CATS[0];S.fe=ETATS[1];['nom','marque','taille','couleur','details','achat','prix'].forEach(i=>{$(i).value='';$(i).classList.remove('err')});$('frais').value=0;$('marge').value=100;$('out').style.display='none';$('f-titre').textContent='Nouvel article';$('save').textContent='Enregistrer dans mon stock';formCats();thumbs();calc('achat')}
+function edit(id){const a=Store.all().find(x=>x.id===id);if(!a)return;reset();$('article-status').value=a.statut;$('article-status').disabled=a.statut==='Vendu';setArticleOwner(a.member);$('storage-place').value=a.location||'';S.edit=id;['nom','marque','taille','couleur','details'].forEach(i=>$(i).value=a[i]||'');$('achat').value=a.achat;$('frais').value=a.frais||0;$('prix').value=a.prix;S.fc=a.cat;S.fe=a.etat||ETATS[1];S.photos=(a.photos||[]).slice();$('f-titre').textContent='Modifier l\'article';$('save').textContent='Enregistrer les modifications';formCats();thumbs();calc('prix');go('new')}
 function gen(){const v=read();if(!v.nom||!v.marque){valid();return}const L=[up(v.nom)+' '+v.marque+(v.couleur?' de couleur '+v.couleur:'')+(v.taille?', taille '+v.taille:'')+'.','État : '+v.etat.toLowerCase()+'.'];if(v.details)L.push(up(v.details)+(/[.!?]$/.test(v.details)?'':'.'));L.push('','Envoi rapide et soigné. N\'hésitez pas à poser vos questions ou à regrouper plusieurs articles pour économiser les frais de port !');$('o-t').textContent=titre(v);$('o-d').textContent=L.join('\n');$('o-l').href='https://www.vinted.fr/catalog?search_text='+encodeURIComponent([v.marque,v.nom,v.taille].join(' '));$('out').style.display='block'}
 async function cp(id,b){try{await navigator.clipboard.writeText($(id).textContent);toast('Texte copié');}catch{const range=document.createRange();range.selectNodeContents($(id));const selection=getSelection();selection.removeAllRanges();selection.addRange(range);toast('Texte sélectionné pour la copie');}}
 
@@ -176,7 +182,7 @@ async function imp(event){
       if(!item || !Number.isSafeInteger(item.id) || ids.has(item.id) ||
         typeof item.nom!=='string' || !item.nom.trim() || !Number.isFinite(item.prix) ||
         !Number.isFinite(item.achat) || !CATS.includes(item.cat) ||
-        !['En vente','Réservé','Vendu'].includes(item.statut) ||
+        !['En stock','En vente','Réservé','Vendu'].includes(item.statut) ||
         (item.statut==='Vendu' && !Number.isFinite(item.vendu))) throw Error();
       for(const field of ['marque','couleur','taille','etat','source','details','location']){
         if(item[field]!=null && typeof item[field]!=='string')throw Error();
@@ -216,11 +222,11 @@ Envoi rapide et soigné. N'hésitez pas à poser vos questions ou à regrouper p
 const _read=read;read=function(){return Object.assign(_read(),{source:$('source').value.trim()})};
 const _reset=reset;reset=function(){_reset();$('source').value=''};
 const _edit=edit;edit=function(id){_edit(id);const a=Store.all().find(x=>x.id===id);$('source').value=(a&&a.source)||''};
-function dup(id){edit(id);S.edit=null;$('f-titre').textContent='Nouvel article (copie)';$('save').textContent='Enregistrer dans mon stock'}
+function dup(id){edit(id);S.edit=null;$('article-status').value='En vente';$('article-status').disabled=false;$('f-titre').textContent='Nouvel article (copie)';$('save').textContent='Enregistrer dans mon stock'}
 function res(id){const d=Store.all(),a=d.find(x=>x.id===id);a.statut=a.statut==='Réservé'?'En vente':'Réservé';Store.set(d);toast(a.statut==='Réservé'?'Article réservé':'Remis en vente');stock()}
 gen=function(){const v=read();if(!v.nom||!v.marque){valid();return}const m={article:up(v.nom),marque:v.marque,couleur:v.couleur?'de couleur '+v.couleur:'',taille:v.taille?'taille '+v.taille:'',etat:v.etat.toLowerCase(),details:v.details?up(v.details)+(/[.!?]$/.test(v.details)?'':'.'):''};const d=($('tpl').value||TPL0).replace(/\{(\w+)\}/g,(x,k)=>m[k]!==undefined?m[k]:x).replace(/ +/g,' ').replace(/ \./g,'.').replace(/\n +/g,'\n').replace(/\n{3,}/g,'\n\n').trim();$('o-t').textContent=titre(v);$('o-d').textContent=d;$('o-l').href='https://www.vinted.fr/catalog?search_text='+encodeURIComponent([v.marque,v.nom,v.taille].join(' '));$('out').style.display='block'};
 $('tpl').value=localStorage.getItem('fusiona-tpl')||TPL0;$('tpl').oninput=()=>localStorage.setItem('fusiona-tpl',$('tpl').value);$('tpl-r').onclick=()=>{$('tpl').value=TPL0;localStorage.removeItem('fusiona-tpl')};
-chips('f-st',['Tous','En vente','Réservé','Vendu'],()=>S.st,v=>{S.st=v;stock()});
+chips('f-st',['Tous','En stock','En vente','Réservé','Vendu'],()=>S.st,v=>{S.st=v;stock()});
 const _stk=stock;stock=function(){_stk();const D=Store.all();document.querySelectorAll('#liste .it,#liste tbody tr').forEach(el=>{const e=el.querySelector('button[onclick^="edit("]');if(!e)return;const id=+e.getAttribute('onclick').match(/\d+/)[0],a=D.find(x=>x.id===id);if(!a)return;const add=(t,f)=>{const b=document.createElement('button');b.className='btn s p';b.textContent=t;b.onclick=f;e.parentNode.insertBefore(b,e)};if(a.statut!=='Vendu')add(a.statut==='Réservé'?'Dispo':'Réserver',()=>res(id));add('Dupliquer',()=>dup(id));const age=Math.floor((Date.now()-a.ajout)/864e5),bd=el.querySelector('.bg');if(a.statut==='En vente'&&age>=DORM&&bd){const z=document.createElement('span');z.className='bg';z.textContent='Dort '+age+' j';bd.after(z)}})};
 const _d2=dash;dash=function(){_d2();const d=workspaceStock(),V=d.filter(a=>a.statut==='Vendu'),grp=f=>{const m={};V.forEach(a=>{const k=f(a)||'Non précisé';m[k]=(m[k]||0)+a.vendu-cout(a)});return Object.entries(m).sort((x,y)=>y[1]-x[1]).slice(0,6).map(([k,b])=>[k,b,eur(b)])};
  hbars('c-marque',grp(a=>a.marque));hbars('c-src',grp(a=>a.source));overview(d);
@@ -485,7 +491,7 @@ function overview(articles) {
   const daily = Array(days).fill(0);
   const byDay = new Map(labels.map((d,i) => [d.getTime(),i]));
   const today = Array(24).fill(0), yesterday = Array(24).fill(0);
-  const statuses = ['En vente','Réservé','Vendu'];
+  const statuses = ['En stock','En vente','Réservé','Vendu'];
   const counts = statuses.map(status => articles.filter(a => a.statut === status).length);
   for (const article of articles) {
     if (article.statut !== 'Vendu' || !article.vente || !Number.isFinite(article.vendu)) continue;
@@ -526,7 +532,7 @@ function overview(articles) {
   svg.onfocus=()=>select(selected); svg.onblur=hide;
   svg.onkeydown=e=>{ if (['ArrowLeft','ArrowRight'].includes(e.key)) { e.preventDefault(); select(selected+(e.key==='ArrowRight'?1:-1)); } };
   $('volume-period').onchange=()=>{stopCounters();overview(workspaceStock());animateCounters();};
-  const colors=['#7153ed','#41a2cd','#48aba2'];
+  const colors=['#8494ad','#7153ed','#41a2cd','#48aba2'];
   $('overview-stock').innerHTML='<div class="status-track">'+counts.map((n,i)=>`<i style="width:${100*n/(articles.length||1)}%;background:${colors[i]}"></i>`).join('')+'</div>'+statuses.map((s,i)=>`<p><i style="background:${colors[i]}"></i>${s}<b>${counts[i]}</b></p>`).join('');
 }
 dash();
