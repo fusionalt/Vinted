@@ -13,25 +13,25 @@ const cout=a=>a.achat+(a.frais||0);
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2200)}
 function theme(){const c=document.documentElement.dataset.theme==='clair';c?delete document.documentElement.dataset.theme:document.documentElement.dataset.theme='clair';localStorage.setItem('fusiona-theme',c?'sombre':'clair');dash()}
 function chips(id,opts,get,set){const z=$(id);z.innerHTML='';opts.forEach(o=>{const b=document.createElement('button');b.type='button';b.className='chip'+(get()===o?' on':'');b.textContent=o;b.onclick=()=>{[...z.children].forEach(c=>c.classList.toggle('on',c===b));set(o)};z.appendChild(b)})}
-function go(p){['dash','new','stock'].forEach(x=>{$('p-'+x).classList.toggle('on',x===p);$('n-'+x).classList.toggle('on',x===p)});if(p==='dash')dash();if(p==='stock')stock();if(p==='new'&&!S.edit)calc('achat');scrollTo({top:0,behavior:'instant'})}
+function go(p){['dash','new','stock'].forEach(x=>{$('p-'+x).classList.toggle('on',x===p);$('n-'+x).classList.toggle('on',x===p)});if(p==='dash')dash();if(p==='stock')stock();if(p==='new')previewArticle();scrollTo({top:0,behavior:'instant'})}
 
 /* ---- Formulaire ---- */
 function num(i){const v=parseFloat($(i).value);return isNaN(v)?null:v}
 function calc(src){const a=num('achat'),f=num('frais')||0;if(a!==null){const c=a+f;if(src==='marge'||src==='achat'){const m=num('marge');if(m!==null)$('prix').value=Math.round(c*(1+m/100)*100)/100}else if(src==='prix'&&c>0){const p=num('prix');if(p!==null)$('marge').value=Math.round((p/c-1)*1000)/10}}
  const c=(a||0)+f,p=num('prix')||0,b=p-c;$('sum').innerHTML=`<div>Coût total<b>${eur(c)}</b></div><div>Prix de vente<b>${eur(p)}</b></div><div>Bénéfice<b class="${b>=0?'ok':'bad'}">${eur(b)}</b></div><div>Marge sur coût<b>${c?Math.round(b/c*100):0} %</b></div><div>Taux de marque<b>${p?Math.round(b/p*100):0} %</b></div><div>Rentabilité<b>${b>0?'Bonne':b===0?'Nulle':'Négative'}</b></div>`}
 function formCats(){chips('f-cat',CATS,()=>S.fc,v=>S.fc=v);chips('f-etat',ETATS,()=>S.fe,v=>S.fe=v)}
-function thumbs(){$('th').innerHTML='';S.photos.forEach((p,i)=>{const d=document.createElement('div');d.innerHTML='<img alt=""><button type="button" aria-label="Supprimer">×</button>';d.querySelector('img').src=p;d.querySelector('button').onclick=()=>{S.photos.splice(i,1);thumbs()};$('th').appendChild(d)})}
+function thumbs(){$('th').innerHTML='';S.photos.forEach((p,i)=>{const d=document.createElement('div');d.innerHTML='<img alt=""><button type="button" aria-label="Supprimer">×</button>';d.querySelector('img').src=p;d.querySelector('button').onclick=()=>{S.photos.splice(i,1);thumbs()};$('th').appendChild(d)});previewArticle()}
 function addFiles(fs){[...fs].filter(f=>f.type.startsWith('image/')).forEach(f=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.photos.push(c.toDataURL('image/jpeg',.72));thumbs()};im.src=r.result};r.readAsDataURL(f)})}
 const dz=$('drop');dz.onclick=()=>$('file').click();$('file').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 ['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('ov')}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('ov')}));dz.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
-function valid(){let ok=true;[['nom','Indique l\'article'],['marque','Indique la marque'],['achat','Prix d\'achat requis']].forEach(([i,m])=>{const bad=i==='achat'?num(i)===null||num(i)<0:!$(i).value.trim();$(i).classList.toggle('err',bad);$('e-'+i).textContent=bad?m:'';if(bad)ok=false});if(!(num('prix')>0)){toast('Indique un prix voulu ou une marge');ok=false}return ok}
-function read(){return{nom:$('nom').value.trim(),marque:$('marque').value.trim(),taille:$('taille').value.trim(),couleur:$('couleur').value.trim(),details:$('details').value.trim(),cat:S.fc,etat:S.fe,achat:num('achat'),frais:num('frais')||0,prix:num('prix'),photos:S.photos.slice()}}
-function save(){if(S.busy||!valid())return;S.busy=true;$('save').disabled=true;const d=Store.all(),v=read();let ok;if(S.edit){const i=d.findIndex(a=>a.id===S.edit);d[i]=Object.assign(d[i],v);ok=Store.set(d)}else{d.push(Object.assign({id:Date.now(),statut:'En vente',vendu:null,ajout:Date.now(),vente:null},v));ok=Store.set(d)}
+function valid(){if(num('frais')<0){toast('Les frais doivent être positifs ou nuls.');$('frais').focus();return false;}let ok=true;[['nom','Indique l\'article'],['marque','Indique la marque'],['achat','Prix d\'achat requis']].forEach(([i,m])=>{const bad=i==='achat'?num(i)===null||num(i)<0:!$(i).value.trim();$(i).classList.toggle('err',bad);$('e-'+i).textContent=bad?m:'';if(bad)ok=false});if(!(num('prix')>0)){toast('Indique un prix voulu ou une marge');ok=false}return ok}
+function read(){return{nom:$('nom').value.trim(),marque:$('marque').value.trim(),taille:$('taille').value.trim(),couleur:$('couleur').value.trim(),details:$('details').value.trim(),location:$('storage-place').value.trim(),cat:S.fc,etat:S.fe,achat:num('achat'),frais:num('frais')||0,prix:num('prix'),photos:S.photos.slice()}}
+function save(){if(S.busy||!valid())return;S.busy=true;$('save').disabled=true;const d=Store.all(),v=read();let ok;if(S.edit){const i=d.findIndex(a=>a.id===S.edit);if(i<0){S.busy=false;$('save').disabled=false;toast('Cet article a été supprimé.');return;}d[i]=Object.assign(d[i],v);ok=Store.set(d)}else{d.push(Object.assign({id:Date.now(),statut:'En vente',vendu:null,ajout:Date.now(),vente:null},v));ok=Store.set(d)}
  S.busy=false;$('save').disabled=false;if(!ok)return;toast(S.edit?'Modifications enregistrées':'Article ajouté');reset();go('stock')}
-function reset(){S.edit=null;S.photos=[];S.fc=CATS[0];S.fe=ETATS[1];['nom','marque','taille','couleur','details','achat','prix'].forEach(i=>{$(i).value='';$(i).classList.remove('err')});$('frais').value=0;$('marge').value=100;$('out').style.display='none';$('f-titre').textContent='Nouvel article';$('save').textContent='Enregistrer dans mon stock';formCats();thumbs();calc('achat')}
-function edit(id){const a=Store.all().find(x=>x.id===id);if(!a)return;reset();S.edit=id;['nom','marque','taille','couleur','details'].forEach(i=>$(i).value=a[i]||'');$('achat').value=a.achat;$('frais').value=a.frais||0;$('prix').value=a.prix;S.fc=a.cat;S.fe=a.etat||ETATS[1];S.photos=(a.photos||[]).slice();$('f-titre').textContent='Modifier l\'article';$('save').textContent='Enregistrer les modifications';formCats();thumbs();calc('prix');go('new')}
+function reset(){$('storage-place').value='';S.edit=null;S.photos=[];S.fc=CATS[0];S.fe=ETATS[1];['nom','marque','taille','couleur','details','achat','prix'].forEach(i=>{$(i).value='';$(i).classList.remove('err')});$('frais').value=0;$('marge').value=100;$('out').style.display='none';$('f-titre').textContent='Nouvel article';$('save').textContent='Enregistrer dans mon stock';formCats();thumbs();calc('achat')}
+function edit(id){const a=Store.all().find(x=>x.id===id);if(!a)return;reset();$('storage-place').value=a.location||'';S.edit=id;['nom','marque','taille','couleur','details'].forEach(i=>$(i).value=a[i]||'');$('achat').value=a.achat;$('frais').value=a.frais||0;$('prix').value=a.prix;S.fc=a.cat;S.fe=a.etat||ETATS[1];S.photos=(a.photos||[]).slice();$('f-titre').textContent='Modifier l\'article';$('save').textContent='Enregistrer les modifications';formCats();thumbs();calc('prix');go('new')}
 function gen(){const v=read();if(!v.nom||!v.marque){valid();return}const L=[up(v.nom)+' '+v.marque+(v.couleur?' de couleur '+v.couleur:'')+(v.taille?', taille '+v.taille:'')+'.','État : '+v.etat.toLowerCase()+'.'];if(v.details)L.push(up(v.details)+(/[.!?]$/.test(v.details)?'':'.'));L.push('','Envoi rapide et soigné. N\'hésitez pas à poser vos questions ou à regrouper plusieurs articles pour économiser les frais de port !');$('o-t').textContent=titre(v);$('o-d').textContent=L.join('\n');$('o-l').href='https://www.vinted.fr/catalog?search_text='+encodeURIComponent([v.marque,v.nom,v.taille].join(' '));$('out').style.display='block'}
-function cp(id,b){navigator.clipboard&&navigator.clipboard.writeText($(id).textContent);const t=b.textContent;b.textContent='Copié !';setTimeout(()=>b.textContent=t,1400)}
+async function cp(id,b){try{await navigator.clipboard.writeText($(id).textContent);toast('Texte copié');}catch{const range=document.createRange();range.selectNodeContents($(id));const selection=getSelection();selection.removeAllRanges();selection.addRange(range);toast('Texte sélectionné pour la copie');}}
 
 /* ---- Stock ---- */
 function stock(){let d=Store.all();const q=$('q').value.toLowerCase();d=d.filter(a=>(!q||(titre(a)+' '+a.cat).toLowerCase().includes(q))&&(S.st==='Tous'||a.statut===S.st)&&(S.cat==='Tous'||a.cat===S.cat));
@@ -40,13 +40,75 @@ function stock(){let d=Store.all();const q=$('q').value.toLowerCase();d=d.filter
  const act=a=>`${a.statut!=='Vendu'?`<button class="btn p" onclick="sell(${a.id})">Vendu</button>`:''}<button class="btn s p" onclick="edit(${a.id})">Modifier</button><button class="btn d p" onclick="del(${a.id})">Suppr.</button>`;
  if(S.vue==='Tableau'){z.innerHTML='<div class="card" style="overflow:auto"><table><thead><tr><th>Article</th><th>Cat.</th><th>Achat</th><th>Prix</th><th>Bénéf.</th><th>Statut</th><th></th></tr></thead><tbody>'+d.map(a=>`<tr><td></td><td>${a.cat}</td><td>${eur(cout(a))}</td><td>${eur(a.statut==='Vendu'?a.vendu:a.prix)}</td><td>${eur((a.statut==='Vendu'?a.vendu:a.prix)-cout(a))}</td><td>${a.statut}</td><td>${act(a)}</td></tr>`).join('')+'</tbody></table></div>';[...z.querySelectorAll('tbody tr')].forEach((r,i)=>r.firstChild.textContent=titre(d[i]));return}
  const g=document.createElement('div');g.className='gr';d.forEach((a,i)=>{const p=a.statut==='Vendu'?a.vendu:a.prix,c=document.createElement('div');c.className='it';c.style.animationDelay=Math.min(i*40,400)+'ms';c.innerHTML=`<div class="ph"></div><div class="bd"><span class="bg ${a.statut==='Vendu'?'v':''}">${a.statut}</span><span class="bg">${a.cat}</span><p></p><div class="pr"><b>${eur(p)}</b> · achat ${eur(cout(a))}</div><div class="pr" style="margin:6px 0 10px">Bénéfice ${eur(p-cout(a))} · ${cout(a)?Math.round((p/cout(a)-1)*100):0} %</div>${act(a)}</div>`;c.querySelector('p').textContent=titre(a);const ph=c.querySelector('.ph');if(a.photos&&a.photos[0]){const im=new Image();im.src=a.photos[0];im.alt='';ph.appendChild(im)}else ph.textContent='Pas de photo';g.appendChild(c)});z.appendChild(g)}
-function sell(id){const d=Store.all(),a=d.find(x=>x.id===id),p=prompt('Prix de vente réel (€) :',a.prix);if(p===null)return;const n=parseFloat(p.replace(',','.'));if(isNaN(n))return;a.vendu=n;a.statut='Vendu';a.vente=Date.now();Store.set(d);toast('Vente enregistrée');stock()}
+function sell(id){ openSale(id); }
+function previewArticle(){
+  const item=read(), cost=(item.achat||0)+item.frais, profit=(item.prix||0)-cost;
+  $('preview-name').textContent=item.nom?up(item.nom):'Ton article';
+  $('preview-brand').textContent=item.marque || '';
+  $('preview-meta').textContent=[item.taille,item.couleur,item.etat].filter(Boolean).join(' · ');
+  $('preview-price').textContent=item.prix===null?'—':eur(item.prix);
+  $('preview-cost').textContent=item.achat===null?'—':eur(cost);
+  const known=item.prix!==null && item.achat!==null;
+  $('preview-profit').textContent=known?eur(profit):'—';
+  $('preview-profit').className=known?(profit<0?'bad':'ok'):'';
+  const image=$('preview-image'), source=item.photos[0];
+  if(source && image.getAttribute('src')!==source) image.src=source;
+  if(!source) image.removeAttribute('src');
+  image.hidden=!source; $('preview-empty').hidden=!!source;
+}
+$('p-new').addEventListener('input',previewArticle);
+$('p-new').addEventListener('click',previewArticle);
+function openSale(id){
+  const item=Store.all().find(a=>a.id===id);
+  if(!item || item.statut==='Vendu') return;
+  const dialog=$('sale-dialog'), price=$('sale-price');
+  $('sale-name').textContent=nm(item);
+  $('sale-cost').textContent=eur(cout(item));
+  price.value=item.prix;
+  function showProfit(){
+    const profit=price.valueAsNumber-cout(item);
+    $('sale-profit').textContent=Number.isFinite(profit)?eur(profit):'—';
+    $('sale-profit').className=profit<0?'bad':'ok';
+  }
+  price.oninput=showProfit; showProfit();
+  $('sale-form').onsubmit=event=>{
+    event.preventDefault();
+    const data=Store.all(), current=data.find(a=>a.id===id), amount=price.valueAsNumber;
+    if(!current || current.statut==='Vendu'){dialog.close();stock();toast('Le stock a changé.');return;}
+    if(!Number.isFinite(amount)||amount<0)return;
+    if(!Store.set(data.map(a=>a.id===id?{...a,statut:'Vendu',vendu:amount,vente:Date.now()}:a)))return;
+    dialog.close();stock();toast('Vente enregistrée');
+  };
+  dialog.showModal();price.focus();price.select();
+}
 function del(id){if(!confirm('Supprimer cet article ?'))return;Store.set(Store.all().filter(a=>a.id!==id));toast('Article supprimé');stock()}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(Store.all())],{type:'application/json'}));a.download='sauvegarde-fusiona.json';a.click()}
-function imp(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){Store.set(d);stock();toast('Sauvegarde restaurée')}}catch(x){toast('Fichier invalide')}};r.readAsText(f)}
+async function imp(event){
+  const input=event.target, file=input.files[0];
+  if(!file)return;
+  input.value='';
+  try{
+    const articles=JSON.parse(await file.text()), ids=new Set();
+    if(!Array.isArray(articles))throw Error();
+    for(const item of articles){
+      if(!item || !Number.isSafeInteger(item.id) || ids.has(item.id) ||
+        typeof item.nom!=='string' || !item.nom.trim() || !Number.isFinite(item.prix) ||
+        !Number.isFinite(item.achat) || !CATS.includes(item.cat) ||
+        !['En vente','Réservé','Vendu'].includes(item.statut) ||
+        (item.statut==='Vendu' && !Number.isFinite(item.vendu))) throw Error();
+      for(const field of ['marque','couleur','taille','etat','source','details','location']){
+        if(item[field]!=null && typeof item[field]!=='string')throw Error();
+      }
+      if(item.photos!=null && (!Array.isArray(item.photos)||item.photos.some(p=>typeof p!=='string')))throw Error();
+      ids.add(item.id);
+    }
+    if(!confirm('Remplacer les '+Store.all().length+' articles du stock par les '+articles.length+' articles de cette sauvegarde ?'))return;
+    if(Store.set(articles)){stock();dash();toast('Stock restauré');}
+  }catch{toast('Sauvegarde incompatible. Le stock est intact.');}
+}
 
 /* ---- Tableau de bord ---- */
-function hbars(id,rows){const z=$(id),m=Math.max(1,...rows.map(r=>Math.abs(r[1])));z.innerHTML=rows.length?rows.map((r,i)=>`<div class="hb"><span>${r[0]}</span><div><i style="width:0;background:${r[1]<0?'var(--bad)':COL[i%5]}" data-w="${Math.abs(r[1])/m*100}"></i></div><b>${r[2]}</b></div>`).join(''):'<div class="vide">Pas encore de données</div>';requestAnimationFrame(()=>requestAnimationFrame(()=>z.querySelectorAll('i').forEach(i=>i.style.width=i.dataset.w+'%')))}
+function hbars(id,rows){const z=$(id),m=Math.max(1,...rows.map(r=>Math.abs(r[1])));z.innerHTML=rows.length?rows.map((r,i)=>`<div class="hb"><span>${esc(r[0])}</span><div><i style="width:0;background:${r[1]<0?'var(--bad)':COL[i%5]}" data-w="${Math.abs(r[1])/m*100}"></i></div><b>${r[2]}</b></div>`).join(''):'<div class="vide">Pas encore de données</div>';requestAnimationFrame(()=>requestAnimationFrame(()=>z.querySelectorAll('i').forEach(i=>i.style.width=i.dataset.w+'%')))}
 function dash(){const d=Store.all(),V=d.filter(a=>a.statut==='Vendu'),E=d.filter(a=>a.statut!=='Vendu'),sum=(x,f)=>x.reduce((s,a)=>s+f(a),0);
  const ca=sum(V,a=>a.vendu),ben=ca-sum(V,a=>cout(a)),vs=sum(E,a=>cout(a)),vp=sum(E,a=>a.prix),mm=V.length?Math.round(sum(V,a=>a.vendu/cout(a)-1)/V.length*100):0,dur=V.length?Math.round(sum(V,a=>(a.vente-a.ajout)/864e5)/V.length):0;
  const K2=[['Chiffre d\'affaires',eur(ca),''],['Bénéfice net',eur(ben),ben<0?'bad':'ok'],['Valeur du stock (achat)',eur(vs),''],['Valeur potentielle',eur(vp),''],['En stock / vendus',E.length+' / '+V.length,''],['Marge moyenne',mm+' %',''],['Rentabilité',ca?Math.round(ben/sum(V,a=>cout(a))*100)+' %':'0 %',''],['Durée moyenne de stockage',dur+' j','']];
@@ -89,17 +151,17 @@ document.addEventListener('keydown',e=>{if(e.key==='n'&&!/INPUT|TEXTAREA/.test(d
 const cb=document.createElement('button');cb.className='btn s';cb.textContent='Exporter les ventes (CSV)';cb.onclick=()=>{const q=s=>'"'+String(s===null||s===undefined?'':s).replace(/"/g,'""')+'"',R=[['Article','Catégorie','Source','Achat','Frais','Prix de vente','Bénéfice','Date de vente']].concat(Store.all().filter(a=>a.statut==='Vendu').map(a=>[titre(a),a.cat,a.source||'',a.achat,a.frais||0,a.vendu,(a.vendu-cout(a)).toFixed(2),new Date(a.vente).toLocaleDateString('fr-FR')])),l=document.createElement('a');l.href=URL.createObjectURL(new Blob(['\ufeff'+R.map(r=>r.map(q).join(';')).join('\n')],{type:'text/csv'}));l.download='ventes-fusiona.csv';l.click()};document.querySelector('#p-stock .btn.s').after(cb);
 
 /* ---- Refonte : cartes, tableau, listes à mémoire, courbe ---- */
-const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const nm=a=>{const n=up(a.nom||'');return a.marque&&!n.toLowerCase().includes(a.marque.toLowerCase())?n+' '+a.marque:n},sbt=a=>[a.taille&&(/^taille\b/i.test(a.taille)?a.taille:'Taille '+a.taille),a.couleur,a.etat].filter(Boolean).join(' · ');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+const nm=a=>{const n=up(a.nom||'');return a.marque&&!n.toLowerCase().includes(a.marque.toLowerCase())?n+' '+a.marque:n},sbt=a=>[a.taille&&(/^taille\b/i.test(a.taille)?a.taille:'Taille '+a.taille),a.couleur,a.etat,a.location].filter(Boolean).join(' · ');
 S.mode='Courbe';COL.splice(0,5,'#a5b4fc','#818cf8','#6366f1','#4f46e5','#4338ca');
-stock=function(){let d=Store.all();const q=$('q').value.toLowerCase();d=d.filter(a=>(!q||(titre(a)+' '+a.cat+' '+(a.source||'')).toLowerCase().includes(q))&&(S.st==='Tous'||a.statut===S.st)&&(S.cat==='Tous'||a.cat===S.cat));
+stock=function(){let d=Store.all();const q=$('q').value.toLowerCase();d=d.filter(a=>(!q||(titre(a)+' '+a.cat+' '+(a.source||'')+' '+(a.location||'')).toLowerCase().includes(q))&&(S.st==='Tous'||a.statut===S.st)&&(S.cat==='Tous'||a.cat===S.cat));
  const P=a=>a.statut==='Vendu'?a.vendu:a.prix,B=a=>P(a)-cout(a),T={'Plus récents':(a,b)=>b.ajout-a.ajout,'Prix croissant':(a,b)=>P(a)-P(b),'Prix décroissant':(a,b)=>P(b)-P(a),'Rentabilité':(a,b)=>B(b)-B(a),'Nom':(a,b)=>nm(a).localeCompare(nm(b))};d.sort(T[S.tri]);
  $('cnt').textContent='· '+d.length+(d.length>1?' articles':' article');const z=$('liste');z.innerHTML='';if(!d.length){z.innerHTML="<div class='vide card'>Aucun article ne correspond.</div>";return}
- const age=a=>Math.floor((Date.now()-a.ajout)/864e5),pill=a=>`<span class='pl ${a.statut==='Vendu'?'v':a.statut==='Réservé'?'r':''}'>${a.statut}</span>`,ach=a=>cout(a)>0?eur(cout(a)):'Gratuit',mg=a=>cout(a)>0?Math.round(B(a)/cout(a)*100)+' %':'coût nul',cl=a=>B(a)>=0?'ok':'bad',sg=a=>(B(a)>=0?'+':'')+eur(B(a)),ph=a=>a.photos&&a.photos[0]?`<img src='${a.photos[0]}' alt=''>`:'',
+ const age=a=>Math.floor((Date.now()-a.ajout)/864e5),pill=a=>`<span class='pl ${a.statut==='Vendu'?'v':a.statut==='Réservé'?'r':''}'>${a.statut}</span>`,ach=a=>cout(a)>0?eur(cout(a)):'Gratuit',mg=a=>cout(a)>0?Math.round(B(a)/cout(a)*100)+' %':'coût nul',cl=a=>B(a)>=0?'ok':'bad',sg=a=>(B(a)>=0?'+':'')+eur(B(a)),ph=a=>a.photos&&a.photos[0]?`<img loading='lazy' src='${esc(a.photos[0])}' alt=''>`:'',
   act=a=>`<div class='ac'>${a.statut!=='Vendu'?`<button class='btn p' data-a='sell' data-i='${a.id}'>Vendu</button>`:''}<button class='btn s p' data-a='menu' data-i='${a.id}' aria-label='Plus d actions'>⋯</button></div>`;
  if(S.vue==='Tableau'){z.innerHTML=`<div class='card tb'><table class='t2'><thead><tr><th></th><th>Article</th><th>Catégorie</th><th class='r'>Achat</th><th class='r'>Prix</th><th class='r'>Bénéfice</th><th>Statut</th><th></th></tr></thead><tbody>${d.map(a=>`<tr><td><span class='th2'>${ph(a)}</span></td><td><div class='nm2'>${esc(nm(a))}</div><div class='sb'>${esc(sbt(a))}</div></td><td>${a.cat}</td><td class='r'>${ach(a)}</td><td class='r'>${eur(P(a))}</td><td class='r ${cl(a)}'>${sg(a)}</td><td>${pill(a)}</td><td class='r'>${act(a)}</td></tr>`).join('')}</tbody></table></div>`;return}
  z.innerHTML=`<div class='gr'>${d.map((a,i)=>`<div class='it' style='animation-delay:${Math.min(i*40,400)}ms'><div class='ph'>${ph(a)||'Pas de photo'}${pill(a)}${a.statut==='En vente'&&age(a)>=DORM?`<span class='pl z'>Dort ${age(a)} j</span>`:''}</div><div class='bd'><div class='br'>${esc(a.marque||a.cat)}</div><div class='nm'>${esc(nm(a))}</div><div class='sb'>${esc(sbt(a))}</div><div class='pc'><b>${eur(P(a))}</b><span class='mg ${cl(a)}'>${sg(a)} · ${mg(a)}</span></div><div class='ft'><span>Achat ${ach(a)}</span><span>${a.cat}</span></div>${act(a)}</div></div>`).join('')}</div>`};
-document.addEventListener('click',e=>{let p=$('pop');if(!p){p=document.createElement('div');p.id='pop';document.body.appendChild(p)}const b=e.target.closest&&e.target.closest('[data-a]');if(!b){p.classList.remove('on');return}const id=+b.dataset.i;if(b.dataset.a==='sell'){p.classList.remove('on');return sell(id)}const a=Store.all().find(x=>x.id===id);p.innerHTML='';[['Modifier',()=>edit(id)],['Dupliquer',()=>dup(id)],[a.statut==='Réservé'?'Remettre en vente':'Réserver',()=>res(id)],['Supprimer',()=>del(id),1]].filter(x=>a.statut!=='Vendu'||['Modifier','Dupliquer','Supprimer'].includes(x[0])).forEach(([t,f,dg])=>{const r=document.createElement('div');r.textContent=t;if(dg)r.className='dg';r.onclick=ev=>{ev.stopPropagation();p.classList.remove('on');f()};p.appendChild(r)});const r=b.getBoundingClientRect();p.style.top=(r.bottom+scrollY+6)+'px';p.style.left=Math.max(8,Math.min(r.right+scrollX-170,innerWidth-180))+'px';p.classList.add('on');e.stopPropagation()},true);
+document.addEventListener('click',e=>{let p=$('pop');if(!p){p=document.createElement('div');p.id='pop';document.body.appendChild(p)}const b=e.target.closest&&e.target.closest('[data-a]');if(!b){p.classList.remove('on');return}const id=+b.dataset.i;if(b.dataset.a==='sell'){p.classList.remove('on');return sell(id)}const a=Store.all().find(x=>x.id===id);p.innerHTML='';[['Modifier',()=>edit(id)],['Dupliquer',()=>dup(id)],['Créer une tâche',()=>{openTeam('');$('task-article').value=String(id);$('task-label').focus()}],[a.statut==='Réservé'?'Remettre en vente':'Réserver',()=>res(id)],['Supprimer',()=>del(id),1]].filter(x=>a.statut!=='Vendu'||['Modifier','Dupliquer','Créer une tâche','Supprimer'].includes(x[0])).forEach(([t,f,dg])=>{const r=document.createElement('div');r.textContent=t;if(dg)r.className='dg';r.onclick=ev=>{ev.stopPropagation();p.classList.remove('on');f()};p.appendChild(r)});const r=b.getBoundingClientRect();p.style.top=(r.bottom+scrollY+6)+'px';p.style.left=Math.max(8,Math.min(r.right+scrollX-170,innerWidth-180))+'px';p.classList.add('on');e.stopPropagation()},true);
 
 /* ---- Listes qui retiennent tes valeurs ---- */
 const OPT='fusiona-opts',FIELDS=['nom','marque','taille','couleur','details','source'];
@@ -114,9 +176,9 @@ const _sv=save;save=function(){if($('nom').value.trim()&&$('marque').value.trim(
 
 /* ---- Courbe, couleurs sobres, indicateurs sans valeur infinie ---- */
 function courbe(){const V=Store.all().filter(a=>a.statut==='Vendu'),n=S.per==='6 mois'?6:12,now=new Date(),M=[];for(let i=n-1;i>=0;i--){const m=new Date(now.getFullYear(),now.getMonth()-i,1);M.push({k:m.getFullYear()*12+m.getMonth(),l:m.toLocaleDateString('fr-FR',{month:'short'}),ca:0,b:0})}V.forEach(a=>{const d=new Date(a.vente),m=M.find(x=>x.k===d.getFullYear()*12+d.getMonth());if(m){m.ca+=a.vendu;m.b+=a.vendu-cout(a)}});
- const W=720,H=240,Pd=30,mx=Math.max(1,...M.map(m=>Math.max(m.ca,m.b))),X=i=>Pd+i*(W-2*Pd)/Math.max(1,M.length-1),Y=v=>H-26-Math.max(0,v)/mx*(H-50),
+ const W=720,H=240,Pd=30,mx=Math.max(1,...M.map(m=>Math.max(m.ca,m.b))),lo=Math.min(0,...M.map(m=>m.b)),X=i=>Pd+i*(W-2*Pd)/Math.max(1,M.length-1),Y=v=>H-26-(v-lo)/(mx-lo)*(H-50),
   ln=(k,c)=>`<polyline points='${M.map((m,i)=>X(i)+','+Y(m[k])).join(' ')}' fill='none' stroke='${c}' stroke-width='2.5' stroke-linejoin='round'/>`+M.map((m,i)=>`<circle cx='${X(i)}' cy='${Y(m[k])}' r='4.5' fill='${c}'><title>${m.l} : ${eur(m[k])}</title></circle>`).join('');
- $('c-mois').innerHTML=`<svg viewBox='0 0 ${W} ${H}' width='100%' role='img' aria-label='Ventes et bénéfices par mois'>`+ln('ca','#6366f1')+ln('b','#10b981')+M.map((m,i)=>`<text x='${X(i)}' y='${H-6}' text-anchor='middle'>${m.l}</text>`).join('')+`</svg><div class='pr'><span style='color:#6366f1'>■</span> Ventes &nbsp; <span style='color:#10b981'>■</span> Bénéfice</div>`}
+ $('c-mois').innerHTML=`<svg viewBox='0 0 ${W} ${H}' width='100%' role='img' aria-label='Ventes et bénéfices par mois'>`+`<path d='M${Pd} ${Y(0)}H${W-Pd}' class='chart-grid'/>`+ln('ca','#6366f1')+ln('b','#10b981')+M.map((m,i)=>`<text x='${X(i)}' y='${H-6}' text-anchor='middle'>${m.l}</text>`).join('')+`</svg><div class='pr'><span style='color:#6366f1'>■</span> Ventes &nbsp; <span style='color:#10b981'>■</span> Bénéfice</div>`}
 const _d3=dash;dash=function(){_d3();const V=Store.all().filter(a=>a.statut==='Vendu'),k=document.querySelectorAll('.kpi b'),c0=V.reduce((s,a)=>s+cout(a),0),pos=V.filter(a=>cout(a)>0);if(k[5])k[5].textContent=pos.length?Math.round(pos.reduce((s,a)=>s+a.vendu/cout(a)-1,0)/pos.length*100)+' %':'—';if(k[6]&&c0===0)k[6].textContent=V.length?'Pur bénéfice':'0 %';if(S.mode==='Courbe')courbe();const mz=document.createElement('div');mz.id='mode';mz.className='row';mz.style.marginLeft='8px';$('per').appendChild(mz);chips('mode',['Barres','Courbe'],()=>S.mode,v=>{S.mode=v;dash()})};
 
 /* ---- Comptes et sauvegarde en ligne (Supabase) ---- */

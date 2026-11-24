@@ -178,7 +178,26 @@ input, textarea { background: var(--s); }
 .team-total{display:block;font-size:30px;letter-spacing:-.04em}.team-line{border-top:1px solid var(--l);margin:14px 0;padding-top:12px;display:grid;gap:6px}
 .team-line span{font-size:13px;color:var(--m)}.team-line>button{justify-self:start}
 @media(max-width:760px){.team-grid{grid-template-columns:minmax(0,1fr)}.workspace-bar{flex-wrap:wrap;gap:0;padding-bottom:10px}.workspace-bar .stock-link{flex-basis:100%}}
-*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+*,*::before,*::after{animation:none!important;transition:none;scroll-behavior:auto!important}
+@media(prefers-reduced-motion:no-preference){
+  .btn,.chip,nav button,#team-switch button,.drop,input,select{transition:background-color .15s,color .15s,border-color .15s,box-shadow .15s}
+  .it .ph img{transition:transform .22s ease-out}.it:hover .ph img{transform:scale(1.025)!important}
+  #toast{transition:opacity .16s,transform .16s}.hb i,.bar i,#obj-b{transition:width .35s ease-out}
+  .chip:active,.btn:active{transform:scale(.98)!important}.btn,.chip{transition:transform .12s,background-color .15s,color .15s}
+  .chip.on:focus{animation:select-chip .18s ease-out!important}
+}
+@keyframes select-chip{from{box-shadow:0 0 0 3px var(--active)}to{box-shadow:0 0 0 0 transparent}}
+#p-new{max-width:1120px}.entry-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(235px,1fr);gap:20px;align-items:start}
+.listing-preview{position:sticky;top:18px}.preview-cover{aspect-ratio:4/3;background:var(--s2);border:1px solid var(--l);border-radius:9px;display:grid;place-items:center;overflow:hidden;color:var(--m);font-size:13px}
+.preview-cover img{width:100%;height:100%;object-fit:contain}.listing-preview h3{color:var(--t);font-size:21px;text-transform:none;letter-spacing:-.025em;overflow-wrap:anywhere}
+#preview-brand{color:var(--accent);font-size:12px;font-weight:650;margin:16px 0 4px}#preview-meta{color:var(--m);font-size:13px}
+#preview-price{font-size:25px}.preview-metric{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--l);padding-top:12px;margin-top:12px;font-size:14px}
+#sale-dialog{width:min(420px,92vw);padding:24px;background:var(--s);color:var(--t);border:1px solid var(--l);border-radius:14px;box-shadow:var(--sh)}
+#sale-dialog::backdrop{background:#15142580}#sale-name{font-size:18px;font-weight:600}.drop{width:100%;background:var(--s);font:inherit}
+.stock-options,#team-tasks details{margin-top:16px}.stock-options summary,#team-tasks summary{color:var(--m);cursor:pointer;font-size:13px}
+#team-tasks .team-line strong{overflow-wrap:anywhere}#team-tasks details .team-line{opacity:.8}
+@media(max-width:850px){.entry-layout{grid-template-columns:minmax(0,1fr)}.listing-preview{position:static}.preview-cover{max-height:220px}}
+
 .it:hover,.kpi:hover,.it:hover .ph img,.btn:hover,.btn:active,.chip:active,.ic:hover,.logo:hover i{transform:none}
 #team-switch button{color:var(--t);min-height:36px}#team-switch button[aria-pressed=true]{color:var(--accent)}
 #liste .gr{grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr))}#liste .it{width:100%;max-width:380px}

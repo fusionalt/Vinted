@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fusiona">
 <meta name="theme-color" content="#6348cf">
-<link rel="stylesheet" href="style.css?v=statique-1">
-<link rel="stylesheet" href="dashboard.css?v=statique-1">
+<link rel="stylesheet" href="style.css?v=atelier-2">
+<link rel="stylesheet" href="dashboard.css?v=atelier-2">
 <script>if (localStorage.getItem('fusiona-theme') !== 'sombre') document.documentElement.dataset.theme = 'clair';</script>
 </head>
 <body>
@@ -59,6 +59,7 @@
 </section>
 
 <section class="pg" id="p-new">
+  <div class="entry-layout">
   <div class="card">
     <h2 id="f-titre">Nouvel article</h2>
     <span class="lb">Informations générales</span>
@@ -72,9 +73,10 @@
       <div><label>Détails (facultatif)</label><input id="details" placeholder="100% coton"></div>
     </div>
     <span class="lb">Catégorie</span><div class="row" id="f-cat"></div>
+    <label for="storage-place">Emplacement dans le stock</label><input id="storage-place" maxlength="100" placeholder="Ex. Étagère 2 · bac B">
     <span class="lb">État</span><div class="row" id="f-etat"></div>
     <span class="lb">Photos</span>
-    <div class="drop" id="drop">Glisse tes photos ici ou clique pour en ajouter</div>
+    <button type="button" class="drop" id="drop">Glisse tes photos ici ou clique pour en ajouter</button>
     <input id="file" type="file" accept="image/*" multiple hidden>
     <div class="th" id="th"></div>
     <span class="lb">Prix et rentabilité</span>
@@ -96,6 +98,10 @@
       <a id="o-l" target="_blank" rel="noopener"><button class="btn s p" style="margin-top:8px">Annonces similaires sur Vinted</button></a>
     </div>
   </div>
+  <aside class="card listing-preview"><h2>Aperçu de la fiche</h2><div class="preview-cover"><img id="preview-image" alt="Photo de couverture" hidden><span id="preview-empty">Photo de couverture</span></div>
+    <p id="preview-brand"></p><h3 id="preview-name"></h3><p id="preview-meta"></p><strong id="preview-price"></strong>
+    <div class="preview-metric"><span>Coût total</span><b id="preview-cost"></b></div><div class="preview-metric"><span>Bénéfice prévu</span><b id="preview-profit"></b></div>
+  </aside></div>
 </section>
 
 <section class="pg" id="p-stock">
@@ -104,10 +110,11 @@
       <h2 style="margin:0">Mon stock <span class="pr" id="cnt"></span></h2>
       <div class="row" id="vue"></div>
     </div>
-    <label>Recherche</label><input id="q" placeholder="titre, marque, catégorie..." oninput="stock()">
+    <label for="q">Rechercher un article</label><input id="q" type="search" placeholder="Titre, marque, emplacement…" oninput="stock()">
     <label>Statut</label><div class="row" id="f-st"></div>
+    <details class="stock-options"><summary>Catégorie et tri</summary>
     <label>Catégorie</label><div class="row" id="f-c"></div>
-    <label>Trier par</label><div class="row" id="f-tri"></div>
+    <label>Trier par</label><div class="row" id="f-tri"></div></details>
   </div>
   <div id="liste"></div>
   <button class="btn s" onclick="exp()">Exporter une sauvegarde</button>
@@ -135,7 +142,13 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=statique-1"></script>
-<script src="equipe.js?v=statique-1"></script>
+<dialog id="sale-dialog"><form id="sale-form"><h2>Enregistrer une vente</h2><p id="sale-name"></p>
+  <label for="sale-price">Prix de vente réel (€)</label><input id="sale-price" required type="number" min="0" step="0.01">
+  <div class="preview-metric"><span>Coût total</span><b id="sale-cost"></b></div>
+  <div class="preview-metric"><span>Bénéfice réalisé</span><b id="sale-profit"></b></div>
+  <button class="btn">Confirmer la vente</button><button class="btn s" type="button" onclick="document.getElementById('sale-dialog').close()">Annuler</button>
+</form></dialog>
+<script src="app.js?v=atelier-2"></script>
+<script src="equipe.js?v=atelier-2"></script>
 </body>
 </html>

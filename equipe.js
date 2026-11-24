@@ -26,6 +26,9 @@ function teamRender() {
   const rows = teamRows.filter(row => !teamMember || row.member === teamMember);
   const tasks = $('team-tasks'), ledger = $('team-ledger');
   tasks.replaceChildren(); ledger.replaceChildren();
+  const finished=teamNode('details','');
+  const finishedCount=rows.filter(row=>row.kind==='task' && row.done).length;
+  finished.append(teamNode('summary','Terminées ('+finishedCount+')'));
   for (const row of rows) {
     const line = teamNode('div',''); line.className = 'team-line';
     const name = teamNode('strong',row.label);
@@ -45,7 +48,7 @@ function teamRender() {
       else teamAction(actions,'Libérer',()=>teamWrite('update',row,{member:''}));
     }
     teamAction(actions,row.done?'Rouvrir':'Terminer',()=>teamWrite('update',row,{done:!row.done}));
-    line.append(actions); tasks.append(line);
+    line.append(actions); (row.done?finished:tasks).append(line);
   }
   if(!teamMember) for(const entry of BUD.apports.slice().reverse()){
     const line=teamNode('div',''); line.className='team-line';
@@ -53,6 +56,7 @@ function teamRender() {
     ledger.append(line);
   }
   if(!tasks.children.length) tasks.append(teamNode('p',teamReady?'Aucune tâche pour le moment.':''));
+  if(finishedCount) tasks.append(finished);
   for(const form of [$('task-form'),$('team-money')]) form.querySelector('button').disabled=!teamReady || teamBusy.has(form.id);
 }
 function teamPage(page) {
