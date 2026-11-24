@@ -1,39 +1,3 @@
-/* Palette et surfaces */
-.fusion-passage {
-  pointer-events:none; position:fixed; inset:0 0 0 auto; z-index:45;
-  overflow:hidden; isolation:isolate; contain:strict;
-}
-.fusion-trail { position:absolute; inset:0; }
-.fusion-passage.reverse .fusion-trail { transform:scaleX(-1); }
-.fusion-trail i { position:absolute; inset:0; animation:fusion-cut 590ms cubic-bezier(.58,.03,.36,1) both; }
-.fusion-trail i:nth-child(1) { background:#a58af2; }
-.fusion-trail i:nth-child(2) { background:linear-gradient(108deg,#392979 15%,#7454cd 58%,#c4afff); animation-delay:32ms; }
-.fusion-trail i:nth-child(3) { background:linear-gradient(108deg,#201836,#4a367b 60%,#7356b5); animation-delay:65ms; }
-.fusion-mark {
-  position:absolute; left:50%; top:45%; width:42px; height:42px;
-  animation:fusion-emblem 710ms both; color:#fcfaff;
-}
-.fusion-mark > * { position:absolute; inset:0; border:1px solid currentColor; transform:rotate(45deg); }
-.fusion-mark i { animation:fusion-orbit 545ms 75ms both; }
-.fusion-mark i:nth-child(2) { animation-delay:135ms; }
-.fusion-mark b { inset:9px; background:currentColor; box-shadow:0 0 22px #d6c5ff85; }
-@keyframes fusion-cut {
-  0% {clip-path:polygon(-45% 0,-30% 0,-55% 100%,-70% 100%)}
-  40% {clip-path:polygon(-20% 0,115% 0,87% 100%,-48% 100%)}
-  56% {clip-path:polygon(6% 0,148% 0,120% 100%,-22% 100%)}
-  100% {clip-path:polygon(152% 0,170% 0,142% 100%,124% 100%)}
-}
-@keyframes fusion-emblem {
-  0%,18% {opacity:0; transform:translate(-50%,-50%) scale(.58) rotate(-40deg)}
-  38%,57% {opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0)}
-  79%,100% {opacity:0; transform:translate(-50%,-50%) scale(1.18) rotate(42deg)}
-}
-@keyframes fusion-orbit {
-  0% {opacity:0;transform:rotate(10deg) scale(.6)}
-  38% {opacity:.85}
-  100% {opacity:0;transform:rotate(95deg) scale(2.1)}
-}
-@media(prefers-reduced-motion:reduce){html:not([data-anim=on]) .fusion-passage{display:none}}
 .activity-chart {position:relative;margin-bottom:24px;border-bottom:1px solid var(--l);padding-bottom:12px}
 .chart-key {display:flex;gap:16px;color:var(--m);font-size:12px}
 .chart-key span::before {content:'';display:inline-block;width:14px;border-top:2px solid var(--accent);margin-right:5px;vertical-align:middle}
@@ -204,3 +168,18 @@ input, textarea { background: var(--s); }
   .g2, .g3 { grid-template-columns: minmax(0, 1fr); }
   #per { gap: 4px; }
 }
+.workspace-bar{display:flex;align-items:center;gap:18px;margin-bottom:24px;border-bottom:1px solid var(--l)}
+.workspace-bar .stock-link{min-width:0;flex:1;margin:0;border:0}
+#team-switch{display:flex;flex:none;gap:3px;background:var(--s2);border:1px solid var(--l);padding:3px;border-radius:9px}
+#team-switch button{border:0;border-radius:6px;padding:7px 10px;background:transparent;color:var(--m);font:inherit;font-size:13px;cursor:pointer}
+#team-switch button[aria-pressed=true]{background:var(--s);color:var(--accent);box-shadow:0 1px 4px #211e391a}
+.team-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.team-grid select,#b-owner{width:100%;border:1px solid var(--l);border-radius:8px;background:var(--s);color:var(--t);font:inherit;padding:10px}
+.team-total{display:block;font-size:30px;letter-spacing:-.04em}.team-line{border-top:1px solid var(--l);margin:14px 0;padding-top:12px;display:grid;gap:6px}
+.team-line span{font-size:13px;color:var(--m)}.team-line>button{justify-self:start}
+.pg.on{animation:none}.nav-arrival{position:relative}
+.nav-arrival.on::after{content:'';position:absolute;left:0;top:24%;height:52%;width:2px;border-radius:2px;background:var(--accent);animation:nav-glide .36s cubic-bezier(.2,.8,.15,1)}
+@keyframes nav-glide{from{transform:translateY(var(--travel))}to{transform:none}}
+@keyframes nav-slide{from{transform:translateX(var(--travel))}to{transform:none}}
+@media(max-width:760px){.team-grid{grid-template-columns:minmax(0,1fr)}.workspace-bar{flex-wrap:wrap;gap:0;padding-bottom:10px}.workspace-bar .stock-link{flex-basis:100%}.horizontal-travel .nav-arrival.on::after{left:15%;top:auto;bottom:0;height:2px;width:70%;animation-name:nav-slide}}
+@media(prefers-reduced-motion:reduce){.nav-arrival.on::after{animation:none}}

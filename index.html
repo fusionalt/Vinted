@@ -23,7 +23,8 @@
   <button class="ic" onclick="theme()" aria-label="Changer de thème">◐</button>
 </header>
 <main>
-<button class="stock-link" onclick="go('stock'); document.getElementById('q').focus()">⌕　Rechercher dans mon stock</button>
+<div class="workspace-bar"><button class="stock-link" onclick="go('stock'); document.getElementById('q').focus()">⌕　Rechercher dans mon stock</button>
+<div id="team-switch" role="group" aria-label="Espaces de travail"><button data-member="">En commun</button><button data-member="Gatien">Gatien</button><button data-member="Jules">Jules</button></div></div>
 
 <section class="pg on" id="p-dash">
   <section class="activity-chart" aria-label="Ventes cumulées par heure">
@@ -115,8 +116,26 @@
   <p class="note">Pour l'instant, tes données restent dans ce navigateur. La sauvegarde en ligne arrive avec les comptes.</p>
 </section>
 
+<section class="pg" id="p-team">
+  <div class="hero"><h1 id="team-heading">En commun</h1><p id="team-state" role="status"></p></div>
+  <div class="team-grid">
+    <section class="card"><h2>Tâches</h2>
+      <form id="task-form"><label for="task-label">À faire</label><input id="task-label" required maxlength="180" placeholder="Photographier le pull Ralph Lauren">
+      <div class="g2"><div><label for="task-article">Article du stock</label><select id="task-article"><option value="">Aucun article associé</option></select></div>
+      <div><label for="task-owner">Responsable</label><select id="task-owner"><option value="">À attribuer</option><option>Gatien</option><option>Jules</option></select></div></div>
+      <button class="btn">Ajouter la tâche</button></form><div id="team-tasks"></div>
+    </section>
+    <section class="card"><h2>Apports à la caisse commune</h2><strong class="team-total" id="team-total"></strong>
+      <form id="team-money"><label for="money-owner">Apport de</label><select id="money-owner"><option value="">En commun</option><option>Gatien</option><option>Jules</option></select>
+      <label for="money-value">Montant (€)</label><input required min="0.01" max="99999999" step="0.01" type="number" id="money-value">
+      <label for="money-label">Libellé</label><input id="money-label" maxlength="180" placeholder="Apport"><button class="btn">Enregistrer l’apport</button></form>
+      <div id="team-ledger"></div><button class="btn s p" onclick="go('budget')">Ouvrir le budget commun</button>
+    </section>
+  </div>
+</section>
 </main>
 <div id="toast"></div>
 <script src="app.js"></script>
+<script src="equipe.js"></script>
 </body>
 </html>

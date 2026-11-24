@@ -236,29 +236,28 @@ const newBud=()=>({apports:[],depenses:[],plafond:0,ventes:true});let BUD=newBud
 mk('budget',`<div id='b-out'></div>`);
 const nbb=document.createElement('button');nbb.id='n-budget';nbb.textContent='Budget';nbb.onclick=()=>go('budget');navEl.appendChild(nbb);
 const _go2=go;
-let passage=null;
 function animateNavigation(from,to){
-  passage?.remove();
-  passage=null;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches && document.documentElement.dataset.anim!=='on') return;
-  const navButtons=Array.from(navEl.querySelectorAll('button'));
-  const backwards=navButtons.indexOf($('n-'+to))<navButtons.indexOf($('n-'+from));
-  const panel=document.createElement('div');
-  panel.className='fusion-passage'+(backwards?' reverse':'');
-  panel.setAttribute('aria-hidden','true');
-  const bounds=mainEl.getBoundingClientRect();
-  const header=document.querySelector('header').getBoundingClientRect();
-  panel.style.left=Math.max(0,bounds.left)+'px';
-  panel.style.top=(matchMedia('(max-width:760px)').matches?Math.max(0,header.bottom):0)+'px';
-  panel.innerHTML='<div class="fusion-trail"><i></i><i></i><i></i></div><div class="fusion-mark"><i></i><i></i><b></b></div>';
-  document.body.append(panel);
-  passage=panel;
-  function finish(){
-    panel.remove();
-    if(passage===panel) passage=null;
+  if(!Element.prototype.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const page=$('p-'+to);
+  if(!page) return;
+  const previous=$('n-'+from), next=$('n-'+to);
+  if(previous && next){
+    const a=previous.getBoundingClientRect(), b=next.getBoundingClientRect();
+    const mobile=matchMedia('(max-width:760px)').matches;
+    navEl.style.setProperty('--travel', (mobile ? a.left-b.left : a.top-b.top)+'px');
+    navEl.classList.toggle('horizontal-travel',mobile);
+    next.animate([{backgroundColor:'transparent'},{backgroundColor:'var(--active)'}],{duration:260});
+    next.classList.remove('nav-arrival'); void next.offsetWidth; next.classList.add('nav-arrival');
   }
-  panel.addEventListener('animationend',event=>{if(event.animationName==='fusion-emblem') finish()});
-  setTimeout(finish,850);
+  const blocks=[...page.children].filter(node=>node.offsetHeight).slice(0,5);
+  blocks.forEach((node,i)=>{
+    node.getAnimations().filter(a=>a.id==='page-entry').forEach(a=>a.cancel());
+    const motion=node.animate([
+      {opacity:0,transform:'translate3d(0,'+(10+i*2)+'px,0) scale(.993)'},
+      {opacity:1,transform:'translate3d(0,0,0) scale(1)'}
+    ],{duration:330,delay:i*28,fill:'backwards',easing:'cubic-bezier(.16,1,.3,1)'});
+    motion.id='page-entry';
+  });
 }
 go=function(p){
   const from=document.body.dataset.pg;
@@ -268,17 +267,88 @@ go=function(p){
   $('p-budget').classList.toggle('on',b);
   $('n-budget').classList.toggle('on',b);
   if(b) budget();
+  if(typeof teamPage !== 'undefined') teamPage(p);
   if(from && from!==p) animateNavigation(from,p);
 };
 const HERO={dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
 document.querySelectorAll('.pg').forEach(s=>{const h=HERO[s.id.slice(2)];if(h){const d=document.createElement('div');d.className='hero';d.innerHTML=`<h1>${h[0]}</h1><p>${h[1]}</p>`;s.prepend(d)}});
 document.body.dataset.pg='dash';
-async function loadBud(){try{const r=await sb.from('reglages').select('data').maybeSingle();if(r.error)throw r.error;const b=r.data&&r.data.data&&r.data.data.budget;BUD=Object.assign(newBud(),b||{});BLOADED=true;idb('put','b',BUD).catch(()=>{})}catch(e){const c=await idb('get','b').catch(()=>null);if(c){BUD=Object.assign(newBud(),c);BLOADED=true}}}
+async function loadBud(){
+  const owner=uid;
+  if(!owner)return;
+  const cacheKey='budget:'+owner;
+  try{
+    const r=await sb.from('reglages').select('data').eq('user_id',owner).maybeSingle();
+    if(r.error)throw r.error;
+    if(uid!==owner || budgetPending)return;
+    BUD=Object.assign(newBud(),r.data?.data?.budget);
+    budgetBaseline=structuredClone(BUD);BLOADED=true;
+    idb('put',cacheKey,BUD).catch(()=>{});
+  }catch{
+    const cached=await idb('get',cacheKey).catch(()=>null);
+    if(uid===owner && cached && !budgetPending){ BUD=Object.assign(newBud(),cached);budgetBaseline=structuredClone(BUD);BLOADED=true; }
+  }
+}
 const _p2=pull;pull=async function(){const ok=await _p2();if(ok&&sb&&uid)await loadBud();return ok};
-const _lv=leave;leave=function(){BUD=newBud();BLOADED=false;_lv()};
+const _lv=leave;leave=function(){clearTimeout(bq);budgetPending=0;BUD=newBud();BLOADED=false;_lv()};
 const _g=guest;guest=function(){BUD=newBud();_g()};
-function bsave(){if(!uid){if(GUEST)setSync(GMSG);return}if(!BLOADED)return;setSync('Enregistrement…');clearTimeout(bq);bq=setTimeout(async()=>{try{idb('put','b',BUD).catch(()=>{});const r=await sb.from('reglages').upsert({user_id:uid,data:{budget:BUD}});if(r.error)throw r.error;setSync('Enregistré ✓')}catch(e){setSync('Non enregistré !')}},500)}
-function bstat(){const V=Store.all().filter(a=>a.statut==='Vendu'),ap=BUD.apports.reduce((s,x)=>s+x.montant,0),ve=BUD.ventes?V.reduce((s,a)=>s+a.vendu,0):0,sm=st=>BUD.depenses.filter(x=>x.statut===st).reduce((s,x)=>s+x.montant,0),rec=sm('Reçu'),route=sm('En route'),env=sm('Envie'),solde=ap+ve-rec-route;return{ap,ve,rec,route,env,solde,apres:solde-env}}
+let budgetPending=0, budgetVersion=0, budgetBaseline=newBud(), budgetQueue=Promise.resolve();
+function mergeBudget(base,local,remote){
+  const merged=Object.assign(newBud(),remote);
+  for(const key of ['plafond','ventes']) if(local[key]!==base[key]) merged[key]=local[key];
+  for(const key of ['apports','depenses']){
+    const before=new Map(base[key].map(x=>[x.id,x]));
+    const after=new Map(local[key].map(x=>[x.id,x]));
+    const items=new Map(merged[key].map(x=>[x.id,x]));
+    for(const id of before.keys()) if(!after.has(id)) items.delete(id);
+    for(const [id,item] of after){
+      if(!before.has(id)) items.set(id,item);
+      else if(items.has(id)){
+        const updated={...items.get(id)};
+        for(const prop of Object.keys(item)) if(item[prop]!==before.get(id)[prop]) updated[prop]=item[prop];
+        items.set(id,updated);
+      }
+    }
+    merged[key]=[...items.values()];
+  }
+  return merged;
+}
+function bsave(){
+  if(!uid){if(GUEST)setSync(GMSG);return;}
+  if(!BLOADED)return;
+  const owner=uid, version=++budgetVersion;
+  budgetPending=version;setSync('Enregistrement…');clearTimeout(bq);
+  bq=setTimeout(()=>{
+    budgetQueue=budgetQueue.then(async()=>{
+      if(uid!==owner || budgetPending!==version)return;
+      const local=structuredClone(BUD),base=structuredClone(budgetBaseline);
+      for(let attempt=0;attempt<5;attempt++){
+        const table=()=>sb.from('reglages');
+        const read=await table().select('data').eq('user_id',owner).maybeSingle();
+        if(read.error)throw read.error;
+        if(uid!==owner)return;
+        const data=read.data?.data || {};
+        const merged=mergeBudget(base,local,data.budget);
+        const next={...data,budget:merged,fusiona_revision:crypto.randomUUID()};
+        let write;
+        if(read.data){
+          const update=table().update({data:next}).eq('user_id',owner);
+          write=await (data.fusiona_revision ? update.eq('data->>fusiona_revision',data.fusiona_revision) : update.is('data->>fusiona_revision',null)).select('user_id');
+        }else write=await table().insert({user_id:owner,data:next}).select('user_id');
+        if(write.error?.code==='23505')continue;
+        if(write.error)throw write.error;
+        if(!write.data.length)continue;
+        if(uid!==owner)return;
+        BUD=mergeBudget(local,BUD,merged);budgetBaseline=structuredClone(merged);
+        idb('put','budget:'+owner,BUD).catch(()=>{});
+        if(budgetPending===version){budgetPending=0;setSync('Enregistré ✓');}
+        return;
+      }
+      throw Error('Conflit de sauvegarde');
+    }).catch(()=>{if(uid===owner)setSync('Budget non enregistré');});
+  },300);
+}
+function bstat(){const V=Store.all().filter(a=>a.statut==='Vendu'),ap=teamContributions()+BUD.apports.reduce((s,x)=>s+x.montant,0),ve=BUD.ventes?V.reduce((s,a)=>s+a.vendu,0):0,sm=st=>BUD.depenses.filter(x=>x.statut===st).reduce((s,x)=>s+x.montant,0),rec=sm('Reçu'),route=sm('En route'),env=sm('Envie'),solde=ap+ve-rec-route;return{ap,ve,rec,route,env,solde,apres:solde-env}}
 const isMois=t=>{const d=new Date(t),n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear()};
 function budget(){const o=$('b-out');if(uid&&!BLOADED){if(bTry){bTry=false;o.innerHTML=`<div class='card vide'>Budget indisponible pour le moment (hors ligne ?).</div>`;return}bTry=true;loadBud().then(budget);return}
  const s=bstat(),D=BUD.depenses,cap=BUD.plafond||0,mp=D.filter(x=>x.statut!=='Envie'&&isMois(x.date)).reduce((t,x)=>t+x.montant,0),
@@ -288,7 +358,7 @@ function budget(){const o=$('b-out');if(uid&&!BLOADED){if(bTry){bTry=false;o.inn
  o.innerHTML=`<div class='card'><h3>Solde disponible</h3><div class='big ${s.solde>=0?'ok':'bad'}'>${eur(s.solde)}</div><div class='pr'>Apports ${eur(s.ap)} + ventes ${eur(s.ve)} − dépensé ${eur(s.rec)} − en route ${eur(s.route)}</div><div class='row' style='margin-top:12px' id='b-v'></div></div>
  <div class='g3'><div class='card'><h3>Dépensé (reçu)</h3><div class='big' style='font-size:28px'>${eur(s.rec)}</div></div><div class='card'><h3>En route (payé, pas reçu)</h3><div class='big' style='font-size:28px'>${eur(s.route)}</div></div><div class='card'><h3>Envies</h3><div class='big' style='font-size:28px'>${eur(s.env)}</div><div class='pr'>Reste après envies : <b class='${s.apres>=0?'ok':'bad'}'>${eur(s.apres)}</b></div></div></div>
  <div class='card'><h3>Plafond de dépenses du mois</h3><div class='row' style='align-items:center'><input id='b-cap' type='number' min='0' value='${cap||''}' placeholder='ex : 100 (€)' style='max-width:200px' onchange='bCap(this.value)'><span class='pr'>${cap?eur(mp)+' dépensés sur '+eur(cap):'Facultatif : le site te prévient quand tu approches de ta limite'}</span></div><div class='bar'><i style='width:${cap?Math.min(100,mp/cap*100):0}%'></i></div></div>
- <div class='g2'><div class='card'><h2>Ajouter de l’argent</h2><label>Libellé</label><input id='b-al' placeholder='Apport, cadeau...'><label>Montant (€)</label><input id='b-am' type='number' step='0.01' min='0'><button class='btn' onclick='bApp()'>Ajouter</button><div style='margin-top:12px'>${ap}</div></div>
+ <div class='g2'><div class='card'><h2>Ajouter de l’argent</h2><label>Libellé</label><input id='b-al' placeholder='Apport, cadeau...'><label for='b-owner'>Apport de</label><select id='b-owner'><option>En commun</option><option>Gatien</option><option>Jules</option></select><label>Montant (€)</label><input id='b-am' type='number' step='0.01' min='0'><button class='btn' onclick='bApp()'>Ajouter</button><button class='btn s' onclick='openTeam(&quot;&quot;)'>Tous les apports</button><div style='margin-top:12px'>${ap}</div></div>
  <div class='card'><h2>Nouvelle dépense ou envie</h2><label>Article</label><input id='b-l'><div class='g2'><div><label>Montant (€)</label><input id='b-m' type='number' step='0.01' min='0'></div><div><label>Plateforme ou vendeur</label><input id='b-p'></div></div><label>Livraison prévue (facultatif)</label><input id='b-d' type='date'><span class='lb'>Statut</span><div class='row' id='b-s'></div><button class='btn' onclick='bAdd()'>Ajouter</button></div></div>
  <div class='kan'>${col('Envies','Envie')}${col('En route','En route')}${col('Reçus','Reçu')}</div>`;
  chips('b-s',['Envie','En route','Reçu'],()=>S.bs,v=>S.bs=v);chips('b-v',['Inclure mes ventes','Sans mes ventes'],()=>BUD.ventes?'Inclure mes ventes':'Sans mes ventes',v=>{BUD.ventes=v==='Inclure mes ventes';bsave();budget()})}
