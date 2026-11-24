@@ -65,12 +65,9 @@ function teamPage(page) {
   teamRender();
 }
 function openTeam(member) {
-  const prior=teamMember;
   teamMember=member;
   $('task-owner').value=member; $('money-owner').value=member;
-  const already=document.body.dataset.pg==='team';
   go('team');
-  if(already && member!==prior) animateNavigation('team','team');
   teamConnect();
 }
 for(const button of $('team-switch').children) button.onclick=()=>openTeam(button.dataset.member);

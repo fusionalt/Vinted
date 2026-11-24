@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fusiona">
 <meta name="theme-color" content="#6348cf">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="style.css?v=statique-1">
+<link rel="stylesheet" href="dashboard.css?v=statique-1">
 <script>if (localStorage.getItem('fusiona-theme') !== 'sombre') document.documentElement.dataset.theme = 'clair';</script>
 </head>
 <body>
@@ -20,7 +20,7 @@
     <button id="n-new" onclick="go('new')">Nouvel article</button>
     <button id="n-stock" onclick="go('stock')">Mon stock</button>
   </nav>
-  <button class="ic" onclick="theme()" aria-label="Changer de thème">◐</button>
+  <div class="row"><button class="ic" onclick="theme()" aria-label="Changer de thème">◐</button></div>
 </header>
 <main>
 <div class="workspace-bar"><button class="stock-link" onclick="go('stock'); document.getElementById('q').focus()">⌕　Rechercher dans mon stock</button>
@@ -113,7 +113,7 @@
   <button class="btn s" onclick="exp()">Exporter une sauvegarde</button>
   <button class="btn s" onclick="document.getElementById('imp').click()">Importer une sauvegarde</button>
   <input id="imp" type="file" accept=".json" hidden onchange="imp(event)">
-  <p class="note">Pour l'instant, tes données restent dans ce navigateur. La sauvegarde en ligne arrive avec les comptes.</p>
+  <p class="note">La sauvegarde JSON contient les articles de ton stock.</p>
 </section>
 
 <section class="pg" id="p-team">
@@ -135,7 +135,7 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js"></script>
-<script src="equipe.js"></script>
+<script src="app.js?v=statique-1"></script>
+<script src="equipe.js?v=statique-1"></script>
 </body>
 </html>
