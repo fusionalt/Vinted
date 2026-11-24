@@ -1,4 +1,42 @@
 /* Palette et surfaces */
+.radar-layout { display:grid; grid-template-columns:minmax(145px,190px) minmax(0,1fr); gap:16px; align-items:start; }
+#radar-brands { display:grid; gap:3px; }
+#radar-brands button { text-align:left; }
+#p-radar select { display:block; width:100%; padding:11px; background:var(--s); color:var(--t); border:1px solid var(--l); border-radius:9px; }
+#p-radar a { color:var(--accent); font-weight:600; }
+#p-radar summary { cursor:pointer; }
+#radar-search { display:inline-block; margin-top:10px; }
+#radar-feed {display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,248px),1fr));gap:14px}
+#radar-feed .radar-listing {position:relative;isolation:isolate;overflow:hidden;aspect-ratio:3/4;max-width:400px;width:100%;margin:0;padding:0;border-radius:17px;background:#333738;color:#fff}
+.radar-listing img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#radar-feed .radar-example {background:#464744 url('exemple-ralph-lauren.png') center 34% / 111% auto no-repeat}
+.radar-example > small {position:absolute;top:12px;left:12px;padding:4px 8px;border-radius:20px;background:#222c;color:white}
+.listing-overlay {position:absolute;inset:auto 0 0;padding:42px 66px 15px 15px;background:linear-gradient(transparent,#131414df 42%,#121313f5);font-size:12px}
+.listing-overlay h3 {color:white;text-transform:none;letter-spacing:0;font-size:15px;margin:4px 0}
+.listing-overlay strong {font-size:22px}.listing-overlay small {font-size:11px}.listing-overlay strong + small {color:#dfff83}
+.listing-tags {display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.listing-tags span {padding:4px 7px;border-radius:20px;background:#FFFFFF26}
+#p-radar .listing-overlay a {position:absolute;bottom:15px;right:13px;border-radius:50%;background:#d6ff45;color:#182000;text-decoration:none;display:grid;place-items:center;width:43px;height:43px;font-size:21px}
+.activity-chart {position:relative;margin-bottom:24px;border-bottom:1px solid var(--l);padding-bottom:12px}
+.chart-key {display:flex;gap:16px;color:var(--m);font-size:12px}
+.chart-key span::before {content:'';display:inline-block;width:14px;border-top:2px solid var(--accent);margin-right:5px;vertical-align:middle}
+.chart-key span+span::before {border-top:2px dotted var(--m)}
+#hour-chart svg,#volume-chart svg {display:block;width:100%;height:auto}
+.chart-line,.chart-previous,.chart-grid {fill:none;vector-effect:non-scaling-stroke}
+.chart-line {stroke:var(--accent);stroke-width:1.8;stroke-linejoin:round}
+.chart-previous {stroke:var(--m);stroke-width:2;stroke-dasharray:0 4;stroke-linecap:round}
+.chart-grid {stroke:var(--l);stroke-width:1}.chart-point {fill:var(--accent)}
+.overview-title {font-size:24px;letter-spacing:-.04em}
+.overview-period {display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;margin:0 0 14px}
+.overview-period select {background:var(--s);color:var(--t);border:1px solid var(--l);border-radius:6px;padding:5px}
+.overview-grid {display:grid;grid-template-columns:minmax(0,2fr) minmax(180px,1fr);gap:14px}
+.overview-grid h2 {margin-bottom:4px}.overview-grid strong {font-size:24px}
+#volume-chart {position:relative;margin-top:9px}
+#volume-chart output {position:absolute;pointer-events:none;transform:translate(-50%,-130%);background:var(--s);color:var(--t);box-shadow:var(--sh);border:1px solid var(--l);border-radius:6px;padding:5px 8px;white-space:nowrap;font-size:12px}
+.status-track {display:flex;border-radius:5px;overflow:hidden;background:var(--s2);height:9px;margin:18px 0}
+#overview-stock p {display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--l);padding-bottom:9px;font-size:13px}
+#overview-stock p i {width:9px;height:9px;border-radius:3px}#overview-stock b {margin-left:auto}
+@media(max-width:760px){.overview-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){.radar-layout{grid-template-columns:minmax(0,1fr)}#radar-brands{display:flex;overflow:auto}#radar-brands button{flex:none}.radar-layout aside{margin:0}}
 :root {
   --accent: #b8adff;
   --rail: #191925;
