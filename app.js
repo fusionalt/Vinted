@@ -96,7 +96,7 @@ $('tpl').value=localStorage.getItem('fusiona-tpl')||TPL0;$('tpl').oninput=()=>lo
 chips('f-st',['Tous','En vente','Réservé','Vendu'],()=>S.st,v=>{S.st=v;stock()});
 const _stk=stock;stock=function(){_stk();const D=Store.all();document.querySelectorAll('#liste .it,#liste tbody tr').forEach(el=>{const e=el.querySelector('button[onclick^="edit("]');if(!e)return;const id=+e.getAttribute('onclick').match(/\d+/)[0],a=D.find(x=>x.id===id);if(!a)return;const add=(t,f)=>{const b=document.createElement('button');b.className='btn s p';b.textContent=t;b.onclick=f;e.parentNode.insertBefore(b,e)};if(a.statut!=='Vendu')add(a.statut==='Réservé'?'Dispo':'Réserver',()=>res(id));add('Dupliquer',()=>dup(id));const age=Math.floor((Date.now()-a.ajout)/864e5),bd=el.querySelector('.bg');if(a.statut==='En vente'&&age>=DORM&&bd){const z=document.createElement('span');z.className='bg';z.textContent='Dort '+age+' j';bd.after(z)}})};
 const _d2=dash;dash=function(){_d2();const d=Store.all(),V=d.filter(a=>a.statut==='Vendu'),grp=f=>{const m={};V.forEach(a=>{const k=f(a)||'Non précisé';m[k]=(m[k]||0)+a.vendu-cout(a)});return Object.entries(m).sort((x,y)=>y[1]-x[1]).slice(0,6).map(([k,b])=>[k,b,eur(b)])};
- hbars('c-marque',grp(a=>a.marque));hbars('c-src',grp(a=>a.source));hbars('c-stat',['En vente','Réservé','Vendu'].map(s=>{const n=d.filter(a=>a.statut===s).length;return[s,n,n]}).filter(r=>r[1]));
+ hbars('c-marque',grp(a=>a.marque));hbars('c-src',grp(a=>a.source));overview(d);
  const o=+localStorage.getItem('fusiona-obj')||0,nw=new Date(),mp=V.filter(a=>{const x=new Date(a.vente);return x.getMonth()===nw.getMonth()&&x.getFullYear()===nw.getFullYear()}).reduce((s,a)=>s+a.vendu-cout(a),0);$('obj').value=o||'';$('obj-b').style.width=o?Math.max(0,Math.min(100,mp/o*100))+'%':'0%';$('obj-t').textContent=o?eur(mp)+' sur '+eur(o)+' ('+Math.round(mp/o*100)+' %)':'Définis un objectif pour suivre ta progression';
  const z=$('c-dorm'),L=d.filter(a=>a.statut==='En vente'&&(Date.now()-a.ajout)/864e5>=DORM).sort((a,b)=>a.ajout-b.ajout).slice(0,5);z.innerHTML=L.length?'':'<div class="vide">Aucun article ne dort depuis plus de '+DORM+' jours</div>';
  L.forEach(a=>{const np=Math.max(Math.round(a.prix*.9),Math.ceil(cout(a))),r=document.createElement('div');r.className='hb';r.style.gridTemplateColumns='1fr auto auto';r.innerHTML='<span></span><span class="pr"></span><button class="btn s p">Baisser</button>';r.children[0].textContent=titre(a);r.children[1].textContent=Math.floor((Date.now()-a.ajout)/864e5)+' j · '+eur(a.prix)+' → '+eur(np);r.children[2].onclick=()=>{const D=Store.all();D.find(x=>x.id===a.id).prix=np;Store.set(D);toast('Prix baissé à '+eur(np));dash()};z.appendChild(r)})};
@@ -265,4 +265,56 @@ function bDel(id){if(!confirm('Supprimer cette ligne ?'))return;BUD.depenses=BUD
 function bApDel(id){BUD.apports=BUD.apports.filter(y=>y.id!==id);bsave();budget()}
 function bCap(v){BUD.plafond=parseFloat(v)||0;bsave();budget()}
 function bStock(id){const x=BUD.depenses.find(y=>y.id===id);reset();$('nom').value=x.label;$('achat').value=x.montant;if(x.plat)$('source').value=x.plat;calc('achat');go('new')}
+function overview(articles) {
+  const now = new Date();
+  const days = Number($('volume-period').value);
+  const dayAt = offset => new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+  const labels = Array.from({length:days}, (_,i) => dayAt(i-days+1));
+  const daily = Array(days).fill(0);
+  const byDay = new Map(labels.map((d,i) => [d.getTime(),i]));
+  const today = Array(24).fill(0), yesterday = Array(24).fill(0);
+  const statuses = ['En vente','Réservé','Vendu'];
+  const counts = statuses.map(status => articles.filter(a => a.statut === status).length);
+  for (const article of articles) {
+    if (article.statut !== 'Vendu' || !article.vente || !Number.isFinite(article.vendu)) continue;
+    const sale = new Date(article.vente);
+    if (sale > now) continue;
+    const hour = sale.getHours();
+    const index = byDay.get(sale.setHours(0,0,0,0));
+    if (index === undefined) continue;
+    daily[index] += article.vendu;
+    if (index === days-1) today[hour] += article.vendu;
+    if (index === days-2) yesterday[hour] += article.vendu;
+  }
+  for (let i=1;i<24;i++) { today[i]+=today[i-1]; yesterday[i]+=yesterday[i-1]; }
+  const maxHour = Math.max(1,...today,...yesterday);
+  const hourlyPoints = values => values.map((v,i) => (3+i*714/23)+','+(100-v/maxHour*89)).join(' ');
+  $('hour-chart').innerHTML = `<svg viewBox="0 0 720 116" role="img" aria-label="Ventes cumulées aujourd’hui et hier"><path d="M3 100H717" class="chart-grid"/><polyline points="${hourlyPoints(yesterday)}" class="chart-previous"/><polyline points="${hourlyPoints(today.slice(0,now.getHours()+1))}" class="chart-line"/><circle cx="${3+now.getHours()*714/23}" cy="${100-today[now.getHours()]/maxHour*89}" r="2" class="chart-point"/><text x="3" y="115">00:00</text><text x="717" y="115" text-anchor="end">23:00</text></svg>`;
+  const width=600, left=8, right=520, top=18, bottom=177;
+  const rawStep=Math.max(1,...daily)/4, magnitude=10**Math.floor(Math.log10(rawStep));
+  const step=([1,2,2.5,5,10].find(n=>n*magnitude>=rawStep) || 10)*magnitude;
+  const x=i=>left+i*(right-left)/(days-1), y=v=>bottom-v/(4*step)*(bottom-top);
+  const grid=Array.from({length:5},(_,i)=>`<path class="chart-grid" d="M${left} ${y(i*step)}H${right}"/><text x="${right+9}" y="${y(i*step)+4}">${(i*step).toLocaleString('fr-FR',{notation:'compact'})} €</text>`).join('');
+  const formatDate=d=>d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+  $('volume-total').textContent=eur(daily.reduce((a,b)=>a+b,0));
+  const box=$('volume-chart');
+  box.innerHTML=`<svg viewBox="0 0 ${width} 201" tabindex="0" role="group" aria-label="Ventes par jour. Flèches gauche et droite pour consulter un montant.">${grid}<polyline class="chart-line" points="${daily.map((v,i)=>x(i)+','+y(v)).join(' ')}"/><circle class="chart-point" r="4" visibility="hidden"/><text x="${left}" y="198">${formatDate(labels[0])}</text><text x="${right}" y="198" text-anchor="end">${formatDate(now)}</text></svg><output hidden></output>`;
+  const svg=box.firstElementChild, tip=box.lastElementChild, point=svg.querySelector('circle');
+  let selected=days-1;
+  function select(i) {
+    selected=Math.max(0,Math.min(days-1,i));
+    point.setAttribute('cx',x(selected)); point.setAttribute('cy',y(daily[selected]));
+    point.setAttribute('visibility','visible');
+    tip.hidden=false; tip.textContent=formatDate(labels[selected])+' · '+eur(daily[selected]);
+    tip.style.left=(x(selected)/width*100)+'%'; tip.style.top=(y(daily[selected])/201*100)+'%';
+  }
+  function hide(){ tip.hidden=true; point.setAttribute('visibility','hidden'); }
+  function track(event){ const rect=svg.getBoundingClientRect(); select(Math.round((((event.clientX-rect.left)/rect.width)*width-left)/(right-left)*(days-1))); }
+  svg.onpointermove=track; svg.onpointerdown=track; svg.onpointerleave=hide;
+  svg.onfocus=()=>select(selected); svg.onblur=hide;
+  svg.onkeydown=e=>{ if (['ArrowLeft','ArrowRight'].includes(e.key)) { e.preventDefault(); select(selected+(e.key==='ArrowRight'?1:-1)); } };
+  $('volume-period').onchange=()=>overview(Store.all());
+  const colors=['#7153ed','#41a2cd','#48aba2'];
+  $('overview-stock').innerHTML='<div class="status-track">'+counts.map((n,i)=>`<i style="width:${100*n/(articles.length||1)}%;background:${colors[i]}"></i>`).join('')+'</div>'+statuses.map((s,i)=>`<p><i style="background:${colors[i]}"></i>${s}<b>${counts[i]}</b></p>`).join('');
+}
 dash();
