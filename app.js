@@ -108,7 +108,7 @@ const cb=document.createElement('button');cb.className='btn s';cb.textContent='E
 /* ---- Refonte : cartes, tableau, listes à mémoire, courbe ---- */
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nm=a=>{const n=up(a.nom||'');return a.marque&&!n.toLowerCase().includes(a.marque.toLowerCase())?n+' '+a.marque:n},sbt=a=>[a.taille&&'Taille '+a.taille,a.couleur,a.etat].filter(Boolean).join(' · ');
-S.mode='Barres';COL.splice(0,5,'#a5b4fc','#818cf8','#6366f1','#4f46e5','#4338ca');
+S.mode='Courbe';COL.splice(0,5,'#a5b4fc','#818cf8','#6366f1','#4f46e5','#4338ca');
 stock=function(){let d=Store.all();const q=$('q').value.toLowerCase();d=d.filter(a=>(!q||(titre(a)+' '+a.cat+' '+(a.source||'')).toLowerCase().includes(q))&&(S.st==='Tous'||a.statut===S.st)&&(S.cat==='Tous'||a.cat===S.cat));
  const P=a=>a.statut==='Vendu'?a.vendu:a.prix,B=a=>P(a)-cout(a),T={'Plus récents':(a,b)=>b.ajout-a.ajout,'Prix croissant':(a,b)=>P(a)-P(b),'Prix décroissant':(a,b)=>P(b)-P(a),'Rentabilité':(a,b)=>B(b)-B(a),'Nom':(a,b)=>nm(a).localeCompare(nm(b))};d.sort(T[S.tri]);
  $('cnt').textContent='· '+d.length+(d.length>1?' articles':' article');const z=$('liste');z.innerHTML='';if(!d.length){z.innerHTML="<div class='vide card'>Aucun article ne correspond.</div>";return}
