@@ -1,6 +1,6 @@
 {
-  "name": "Jugo",
-  "short_name": "Jugo",
+  "name": "Juga",
+  "short_name": "Juga",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
@@ -9,7 +9,7 @@
   "theme_color": "#103977",
   "icons": [
     {
-      "src": "jugo-icon.png",
+      "src": "juga-icon.png",
       "type": "image/png",
       "sizes": "any"
     }

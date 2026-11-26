@@ -280,7 +280,7 @@ header .ic[aria-pressed="true"]{background:var(--active);color:var(--accent);bor
   --t:#142940; --m:#526980; --accent:#164f99; --active:#dceafa;
   --b:#174c91; --bt:white; --ok:#087457; --bad:#ac4035;
 }
-.logo .jugo-logo{display:block;width:118px;height:40px;object-fit:contain;background:white;border-radius:7px}
+.logo .juga-logo{display:block;width:118px;height:40px;object-fit:contain;background:white;border-radius:7px}
 #n-watch::before{content:"▤"}
 .watch-banner{background:var(--s);border-left:4px solid var(--accent);align-items:center}
 #watch-balance{color:var(--accent);font-variant-numeric:tabular-nums}
@@ -305,7 +305,7 @@ header .ic[aria-pressed="true"]{background:var(--active);color:var(--accent);bor
 #watch-list .watch-priority span{color:var(--accent);background:var(--active);white-space:nowrap}
 @media(max-width:720px){
   .watch-entry form{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .watch-kind span{padding:8px}.logo .jugo-logo{width:89px;height:30px}
+  .watch-kind span{padding:8px}.logo .juga-logo{width:89px;height:30px}
   #watch-list .watch-empty{text-align:left;white-space:normal}
   #watch-list .watch-empty span{display:block;max-width:230px}
 }

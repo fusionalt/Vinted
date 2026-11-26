@@ -1,6 +1,6 @@
 const prefix = 'fusiona-' + self.registration.scope + '-';
-const cacheName = prefix + 'jugo-1';
-const files = ['./', 'index.html', 'style.css?v=jugo-1', 'dashboard.css?v=jugo-1', 'app.js?v=jugo-1', 'equipe.js?v=jugo-1', 'manifest.json', 'jugo-logo.png', 'jugo-icon.png'];
+const cacheName = prefix + 'juga-1';
+const files = ['./', 'index.html', 'style.css?v=juga-1', 'dashboard.css?v=juga-1', 'app.js?v=juga-1', 'equipe.js?v=juga-1', 'manifest.json', 'juga-logo.png', 'juga-icon.png'];
 const shell = new Set(files.map(file => new URL(file, self.registration.scope).href));
 
 self.addEventListener('install', event => {
