@@ -395,7 +395,7 @@ ab.onclick=()=>usr?authView('account'):authView('login');
 addEventListener('beforeunload',e=>{if(GUEST&&MEM.length){e.preventDefault();e.returnValue=''}});
 
 /* ---- Budget / porte-monnaie, et une mise en page par onglet ---- */
-const newBud=()=>({apports:[],depenses:[],plafond:0,ventes:true});let BUD=newBud(),bq=null,BLOADED=false,bTry=false;S.bs='Envie';
+const newBud=()=>({viseur:[],apports:[],depenses:[],plafond:0,ventes:true});let BUD=newBud(),bq=null,BLOADED=false,bTry=false;S.bs='Envie';
 mk('budget',`<div id='b-out'></div>`);
 const nbb=document.createElement('button');nbb.id='n-budget';nbb.textContent='Budget';nbb.onclick=()=>go('budget');navEl.appendChild(nbb);
 const _go2=go;
@@ -408,11 +408,12 @@ go=function(p){
   $('p-budget').classList.toggle('on',b);
   $('n-budget').classList.toggle('on',b);
   if(b) budget();
+  if($('n-watch')){ $('p-watch').classList.toggle('on',p==='watch'); $('n-watch').classList.toggle('on',p==='watch'); if(p==='watch') drawWatch(); }
   if(typeof teamPage !== 'undefined') teamPage(p);
   if(p==='verdict')verdict();
   if(entering)animateData(p);
 };
-const HERO={dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
+const HERO={watch:['Dans le viseur','Compare tes prochains achats avant de les ajouter au stock.'],dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
 document.querySelectorAll('.pg').forEach(s=>{const h=HERO[s.id.slice(2)];if(h){const d=document.createElement('div');d.className='hero';d.innerHTML=`<h1>${h[0]}</h1><p>${h[1]}</p>`;s.prepend(d)}});
 document.body.dataset.pg='dash';
 async function loadBud(){
@@ -431,14 +432,14 @@ async function loadBud(){
     if(uid===owner && cached && !budgetPending){ BUD=Object.assign(newBud(),cached);budgetBaseline=structuredClone(BUD);BLOADED=true; }
   }
 }
-const _p2=pull;pull=async function(){const ok=await _p2();if(ok&&sb&&uid)await loadBud();return ok};
+const _p2=pull;pull=async function(){const ok=await _p2();if(ok&&sb&&uid)await loadBud();if(document.body.dataset.pg==='watch')drawWatch();return ok};
 const _lv=leave;leave=function(){clearTimeout(bq);budgetPending=0;BUD=newBud();BLOADED=false;_lv()};
 const _g=guest;guest=function(){BUD=newBud();_g()};
 let budgetPending=0, budgetVersion=0, budgetBaseline=newBud(), budgetQueue=Promise.resolve();
 function mergeBudget(base,local,remote){
   const merged=Object.assign(newBud(),remote);
   for(const key of ['plafond','ventes','plafond_Gatien','plafond_Jules','ventes_Gatien','ventes_Jules']) if(local[key]!==base[key]) merged[key]=local[key];
-  for(const key of ['apports','depenses']){
+  for(const key of ['apports','depenses','viseur']){
     const before=new Map(base[key].map(x=>[x.id,x]));
     const after=new Map(local[key].map(x=>[x.id,x]));
     const items=new Map(merged[key].map(x=>[x.id,x]));
@@ -483,7 +484,7 @@ function bsave(){
         if(uid!==owner)return;
         BUD=mergeBudget(local,BUD,merged);budgetBaseline=structuredClone(merged);
         idb('put','budget:'+owner,BUD).catch(()=>{});
-        if(budgetPending===version){budgetPending=0;setSync('Enregistré ✓');}
+        if(budgetPending===version){budgetPending=0;setSync('Enregistré ✓');if(document.body.dataset.pg==='watch')drawWatch();}
         return;
       }
       throw Error('Conflit de sauvegarde');

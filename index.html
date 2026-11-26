@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fusiona">
 <meta name="theme-color" content="#6348cf">
-<link rel="stylesheet" href="style.css?v=mobile-2">
-<link rel="stylesheet" href="dashboard.css?v=mobile-2">
+<link rel="stylesheet" href="style.css?v=viseur-1">
+<link rel="stylesheet" href="dashboard.css?v=viseur-1">
 <script>if (localStorage.getItem('fusiona-theme') !== 'sombre') document.documentElement.dataset.theme = 'clair';</script>
 </head>
 <body>
@@ -27,6 +27,18 @@
 <div class="workspace-bar"><button class="stock-link" onclick="go('stock'); document.getElementById('q').focus()">⌕　Rechercher dans mon stock</button>
 <div id="team-switch" role="group" aria-label="Espaces de travail"><button data-member="">En commun</button><button data-member="Gatien">Gatien</button><button data-member="Jules">Jules</button></div></div>
 
+<section class="pg" id="p-watch">
+  <div class="card watch-banner"><div><span class="lb">Budget disponible</span><strong id="watch-balance"></strong></div><div><span class="lb">Acheter en priorité</span><strong id="watch-first"></strong></div></div>
+  <details class="card watch-entry"><summary>Ajouter un article à surveiller</summary>
+    <form id="watch-form"><label>Article<input name="article" maxlength="120" required placeholder="Polaire Patagonia, taille M"></label>
+    <label>Type<select name="kind"><option>Mi-saison</option><option>Manteau ou maille chaude</option><option>Tenue d’été</option><option>Toutes saisons</option></select></label>
+    <label>Coût d’achat, frais inclus (€)<input name="buy" type="number" min="0" max="9999999" step=".01" required></label>
+    <label>Revente visée (€)<input name="sell" type="number" min=".01" max="9999999" step=".01" required></label>
+    <label>Espace<select name="member"><option value="">En commun</option><option>Gatien</option><option>Jules</option></select></label>
+    <button class="btn" type="submit">Ajouter au viseur</button></form></details>
+  <div class="card"><h2>Ordre d’achat</h2><p class="note">Le classement privilégie les achats finançables, puis le gain estimé par euro investi. Les saisons sont des repères indicatifs pour la France.</p>
+  <div id="watch-list"></div></div>
+</section>
 <section class="pg on" id="p-dash">
   <section class="activity-chart" aria-label="Ventes cumulées par heure">
     <h2>Ventes du jour</h2>
@@ -154,7 +166,7 @@
   <div class="preview-metric"><span>Bénéfice réalisé</span><b id="sale-profit"></b></div>
   <button class="btn">Confirmer la vente</button><button class="btn s" type="button" onclick="document.getElementById('sale-dialog').close()">Annuler</button>
 </form></dialog>
-<script src="app.js?v=mobile-2"></script>
-<script src="equipe.js?v=mobile-2"></script>
+<script src="app.js?v=viseur-1"></script>
+<script src="equipe.js?v=viseur-1"></script>
 </body>
 </html>

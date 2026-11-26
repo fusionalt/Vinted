@@ -19,6 +19,7 @@ function teamAction(parent, text, action) {
   parent.append(button);
 }
 function teamRender() {
+  if(document.body.dataset.pg==='watch') drawWatch();
   $('team-state').textContent = teamStatus;
   $('team-heading').textContent = teamMember || 'En commun';
   $('team-total').textContent = eur(teamContributions(teamMember) + BUD.apports.filter(inWorkspace).reduce((s,a)=>s+a.montant,0));
@@ -138,6 +139,7 @@ async function teamRefresh() {
 }
 function refreshStockViews() {
   const page=document.body.dataset.pg;
+  if(page==='watch') drawWatch();
   if(page==='dash') dash();
   if(page==='stock') stock();
   if(page==='today') today();
@@ -245,3 +247,90 @@ const enterGuestTeam=guest;
 guest=function(){enterGuestTeam();teamConnect();};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){teamConnect();teamRefresh();}});
 setInterval(()=>{if(!document.hidden){teamConnect();teamRefresh();}},15000);
+const watchNav = teamNode('button','Dans le viseur');
+watchNav.id = 'n-watch';
+watchNav.onclick = () => go('watch');
+navEl.append(watchNav);
+
+const watchSeasons = {
+  'Mi-saison': ['Hiver et été','Printemps et automne'],
+  'Manteau ou maille chaude': ['Printemps et été','Hiver'],
+  'Tenue d’été': ['Automne et hiver','Été'],
+  'Toutes saisons': ['Toute l’année','Aucune en particulier']
+};
+
+function planWatch(rows, balance) {
+  const ranked = rows.map(row => {
+    const gain = row.sell - row.buy;
+    const roi = row.buy ? gain / row.buy : Infinity;
+    return {...row, gain, roi, eligible: gain > 0 && row.buy <= balance};
+  }).sort((a,b) => Number(b.eligible)-Number(a.eligible) || b.roi-a.roi || b.gain-a.gain || a.label.localeCompare(b.label,'fr'));
+  let remaining = balance;
+  let priority = 0;
+  for (const item of ranked) {
+    if (item.gain <= 0) item.reason = 'Sans bénéfice';
+    else if (item.buy > balance) item.reason = 'Hors budget';
+    else if (item.buy > remaining) item.reason = 'À reporter';
+    else {
+      remaining -= item.buy;
+      item.priority = ++priority;
+      item.reason = 'Priorité ' + priority;
+    }
+  }
+  return ranked;
+}
+
+function drawWatch() {
+  const form = $('watch-form');
+  const ready = !uid || BLOADED;
+  form.elements.member.value = teamMember || (form.dataset.scope === teamMember ? form.elements.member.value : '');
+  form.dataset.scope = teamMember;
+  form.elements.member.disabled = !!teamMember;
+  form.querySelector('button').disabled = !ready;
+  const balance = Math.round(bstat().solde * 100);
+  const budgetKnown = ready && (!uid || teamReady);
+  $('watch-balance').textContent = budgetKnown ? eur(balance / 100) : 'Indisponible';
+  const rows = planWatch(BUD.viseur.filter(inWorkspace), balance);
+  const first = rows.find(x => x.priority === 1);
+  $('watch-first').textContent = budgetKnown ? (first?.label || 'Aucun achat prioritaire') : 'Budget à synchroniser';
+  const list = $('watch-list');
+  list.replaceChildren();
+  if (!rows.length) {
+    list.append(teamNode('p',ready ? 'Aucun article à surveiller dans cet espace.' : 'Chargement des articles…'));
+    return;
+  }
+  const table = document.createElement('table');
+  const headers = ['Article','Achat','Revente','Gain estimé','Rendement','Saison d’achat','Décision',''];
+  const header = table.createTHead().insertRow();
+  for (const title of headers) header.append(teamNode('th',title));
+  const body = table.createTBody();
+  for (const item of rows) {
+    const tr = body.insertRow();
+    const seasons = watchSeasons[item.kind] || watchSeasons['Toutes saisons'];
+    const values = [item.label,eur(item.buy/100),eur(item.sell/100),eur(item.gain/100),
+      item.buy ? Math.round(item.roi*100)+' %' : 'Coût nul', seasons[0], budgetKnown ? item.reason : 'En attente'];
+    values.forEach((value,i) => {
+      const cell = tr.insertCell();
+      cell.dataset.label = headers[i];
+      cell.append(teamNode('span',value));
+      if(i===0 || i===5) cell.append(teamNode('small',i===0 ? item.member || 'En commun' : 'À éviter : '+seasons[1]));
+      if(i===6 && item.priority && budgetKnown) cell.className='watch-priority';
+    });
+    teamAction(tr.insertCell(),'Retirer',()=>{
+      if(!confirm('Retirer cet article du viseur ?')) return;
+      BUD.viseur=BUD.viseur.filter(x=>x.id!==item.id);
+      bsave(); drawWatch();
+    });
+  }
+  list.append(table);
+}
+
+$('watch-form').onsubmit = event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const label = form.elements.article.value.trim();
+  if (!label || (uid && !BLOADED)) return;
+  BUD.viseur.push({id:crypto.randomUUID(),member:teamMember || form.elements.member.value,label,kind:form.elements.kind.value,
+    buy:Math.round(form.elements.buy.valueAsNumber*100),sell:Math.round(form.elements.sell.valueAsNumber*100)});
+  bsave(); form.reset(); drawWatch();
+};
