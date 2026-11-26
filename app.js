@@ -1,4 +1,4 @@
-const K='fusiona-v3',CATS=['Vêtements','Chaussures','Électronique','Accessoires','Autres'],ETATS=['Neuf avec étiquette','Neuf sans étiquette','Très bon état','Bon état','Satisfaisant'],COL=['#6366f1','#10b981','#f59e0b','#ec4899','#06b6d4'];
+const K='fusiona-v3',CATS=['Vêtements','Chaussures','Électronique','Accessoires','Autres'],ETATS=['Neuf avec étiquette','Neuf sans étiquette','Très bon état','Bon état','Satisfaisant'],COL=['#417ed4','#10b981','#f59e0b','#bf7742','#06b6d4'];
 const $=i=>document.getElementById(i),eur=n=>(Math.round(n*100)/100).toFixed(2).replace('.',',')+' €',up=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const S={cat:'Tous',st:'Tous',tri:'Plus récents',vue:'Cartes',per:'6 mois',edit:null,photos:[],fc:CATS[0],fe:ETATS[1],busy:false};
 
@@ -58,7 +58,7 @@ function animateData(page){
   if(!panel?.classList.contains('on'))return;
   function play(node,frames,duration){
     if(!node.animate)return;
-    const animation=node.animate(frames,{duration,easing:'cubic-bezier(.2,.7,.25,1)'});
+    const animation=node.animate(frames,{duration:duration*2,easing:'cubic-bezier(.2,.7,.25,1)'});
     dataAnimations.add(animation);
     animation.onfinish=()=>dataAnimations.delete(animation);
   }
@@ -77,7 +77,12 @@ function animateData(page){
     const vertical=node.tagName.toLowerCase()==='rect';
     play(node,[{transform:vertical?'scaleY(0)':'scaleX(0)'},{transform:vertical?'scaleY(1)':'scaleX(1)'}],500);
   }
-  const elements=[...panel.querySelectorAll('#volume-total,#kpis .kpi b,.big,#team-total,#preview-price,#preview-cost,#preview-profit,#v-out .sum b,#t-out .pr b,.pc>b,.t2 td.r')].slice(0,40);
+  if(page==='watch') {
+    for(const row of [...panel.querySelectorAll('#watch-list tbody tr')].slice(0,12)) {
+      play(row,[{opacity:.35},{opacity:1}],480);
+    }
+  }
+  const elements=[...panel.querySelectorAll('#watch-balance,#volume-total,#kpis .kpi b,.big,#team-total,#preview-price,#preview-cost,#preview-profit,#v-out .sum b,#t-out .pr b,.pc>b,.t2 td.r')].slice(0,40);
   const counters=elements.flatMap(node=>{
     const label=node.textContent, match=label.match(/^(-?\d+)(,\d+)?( €| %| j)$/);
     if(!match)return [];
@@ -89,7 +94,7 @@ function animateData(page){
   finishCounters=()=>counters.forEach(c=>{if(c.node.textContent===c.last)c.node.textContent=c.label;});
   const start=performance.now();
   function draw(now){
-    const p=Math.min(1,(now-start)/420), fraction=1-(1-p)**3;
+    const p=Math.min(1,(now-start)/1050), fraction=1-(1-p)**3;
     for(const c of counters){
       if(!c.node.isConnected || c.node.textContent!==c.last)continue;
       c.last=(c.number*fraction).toFixed(c.digits).replace('.',',')+c.unit;
@@ -234,7 +239,7 @@ function dash(){stopCounters();const d=workspaceStock(),V=d.filter(a=>a.statut==
  chips('per',['6 mois','12 mois'],()=>S.per,v=>{S.per=v;dash()});
  const n=S.per==='6 mois'?6:12,now=new Date(),M=[];for(let i=n-1;i>=0;i--){const m=new Date(now.getFullYear(),now.getMonth()-i,1);M.push({k:m.getFullYear()*12+m.getMonth(),l:m.toLocaleDateString('fr-FR',{month:'short'}),ca:0,b:0})}
  V.forEach(a=>{const dt=new Date(a.vente),k=dt.getFullYear()*12+dt.getMonth(),m=M.find(x=>x.k===k);if(m){m.ca+=a.vendu;m.b+=a.vendu-cout(a)}});
- const W=720,H=240,mx=Math.max(1,...M.map(m=>m.ca)),bw=W/M.length;let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Ventes et bénéfices par mois">`;M.forEach((m,i)=>{const x=i*bw+bw*.12,w=bw*.34,h1=m.ca/mx*(H-40),h2=Math.max(0,m.b)/mx*(H-40);s+=`<rect x="${x}" y="${H-24-h1}" width="${w}" height="${h1}" rx="4" fill="#6366f1"><title>${m.l} : ventes ${eur(m.ca)}</title></rect><rect x="${x+w+3}" y="${H-24-h2}" width="${w}" height="${h2}" rx="4" fill="#10b981"><title>${m.l} : bénéfice ${eur(m.b)}</title></rect><text x="${x+w}" y="${H-6}" text-anchor="middle">${m.l}</text>`});$('c-mois').innerHTML=s+'</svg><div class="pr"><span style="color:#6366f1">■</span> Ventes &nbsp; <span style="color:#10b981">■</span> Bénéfice</div>';
+ const W=720,H=240,mx=Math.max(1,...M.map(m=>m.ca)),bw=W/M.length;let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Ventes et bénéfices par mois">`;M.forEach((m,i)=>{const x=i*bw+bw*.12,w=bw*.34,h1=m.ca/mx*(H-40),h2=Math.max(0,m.b)/mx*(H-40);s+=`<rect x="${x}" y="${H-24-h1}" width="${w}" height="${h1}" rx="4" fill="#417ed4"><title>${m.l} : ventes ${eur(m.ca)}</title></rect><rect x="${x+w+3}" y="${H-24-h2}" width="${w}" height="${h2}" rx="4" fill="#10b981"><title>${m.l} : bénéfice ${eur(m.b)}</title></rect><text x="${x+w}" y="${H-6}" text-anchor="middle">${m.l}</text>`});$('c-mois').innerHTML=s+'</svg><div class="pr"><span style="color:#417ed4">■</span> Ventes &nbsp; <span style="color:#10b981">■</span> Bénéfice</div>';
  hbars('c-rep',CATS.map(c=>[c,E.filter(a=>a.cat===c).length,E.filter(a=>a.cat===c).length]).filter(r=>r[1]));
  hbars('c-ren',CATS.map(c=>{const x=V.filter(a=>a.cat===c),b=sum(x,a=>a.vendu-cout(a));return[c,b,eur(b),x.length]}).filter(r=>r[3]));
  const top=V.slice().sort((a,b)=>(b.vendu-cout(b))-(a.vendu-cout(a))).slice(0,5);$('c-top').innerHTML='';if(!top.length)$('c-top').innerHTML='<div class="vide">Aucune vente enregistrée</div>';else top.forEach((a,i)=>{const r=document.createElement('div');r.className='hb';r.style.gridTemplateColumns='24px 1fr 80px';r.innerHTML='<span>'+(i+1)+'</span><span></span><b class="ok">'+eur(a.vendu-cout(a))+'</b>';r.children[1].textContent=titre(a);$('c-top').appendChild(r)})}
@@ -271,7 +276,7 @@ const cb=document.createElement('button');cb.className='btn s';cb.textContent='E
 /* ---- Refonte : cartes, tableau, listes à mémoire, courbe ---- */
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 const nm=a=>{const n=up(a.nom||'');return a.marque&&!n.toLowerCase().includes(a.marque.toLowerCase())?n+' '+a.marque:n},sbt=a=>[a.taille&&(/^taille\b/i.test(a.taille)?a.taille:'Taille '+a.taille),a.couleur,a.etat,a.location,!teamMember&&a.member].filter(Boolean).join(' · ');
-S.mode='Courbe';COL.splice(0,5,'#a5b4fc','#818cf8','#6366f1','#4f46e5','#4338ca');
+S.mode='Courbe';COL.splice(0,5,'#adcef7','#72a7ee','#417ed4','#245db3','#1356a3');
 stock=function(){let d=workspaceStock();const q=$('q').value.toLowerCase();d=d.filter(a=>(!q||(titre(a)+' '+a.cat+' '+(a.source||'')+' '+(a.location||'')).toLowerCase().includes(q))&&(S.st==='Tous'||a.statut===S.st)&&(S.cat==='Tous'||a.cat===S.cat));
  const P=a=>a.statut==='Vendu'?a.vendu:a.prix,B=a=>P(a)-cout(a),T={'Plus récents':(a,b)=>b.ajout-a.ajout,'Prix croissant':(a,b)=>P(a)-P(b),'Prix décroissant':(a,b)=>P(b)-P(a),'Rentabilité':(a,b)=>B(b)-B(a),'Nom':(a,b)=>nm(a).localeCompare(nm(b))};d.sort(T[S.tri]);
  $('cnt').textContent='· '+d.length+(d.length>1?' articles':' article');const z=$('liste');z.innerHTML='';if(!d.length){z.innerHTML="<div class='vide card'>Aucun article ne correspond.</div>";return}
@@ -296,7 +301,7 @@ const _sv=save;save=function(){if($('nom').value.trim()&&$('marque').value.trim(
 function courbe(){const V=workspaceStock().filter(a=>a.statut==='Vendu'),n=S.per==='6 mois'?6:12,now=new Date(),M=[];for(let i=n-1;i>=0;i--){const m=new Date(now.getFullYear(),now.getMonth()-i,1);M.push({k:m.getFullYear()*12+m.getMonth(),l:m.toLocaleDateString('fr-FR',{month:'short'}),ca:0,b:0})}V.forEach(a=>{const d=new Date(a.vente),m=M.find(x=>x.k===d.getFullYear()*12+d.getMonth());if(m){m.ca+=a.vendu;m.b+=a.vendu-cout(a)}});
  const W=720,H=240,Pd=30,mx=Math.max(1,...M.map(m=>Math.max(m.ca,m.b))),lo=Math.min(0,...M.map(m=>m.b)),X=i=>Pd+i*(W-2*Pd)/Math.max(1,M.length-1),Y=v=>H-26-(v-lo)/(mx-lo)*(H-50),
   ln=(k,c)=>`<polyline points='${M.map((m,i)=>X(i)+','+Y(m[k])).join(' ')}' fill='none' stroke='${c}' stroke-width='2.5' stroke-linejoin='round'/>`+M.map((m,i)=>`<circle cx='${X(i)}' cy='${Y(m[k])}' r='4.5' fill='${c}'><title>${m.l} : ${eur(m[k])}</title></circle>`).join('');
- $('c-mois').innerHTML=`<svg viewBox='0 0 ${W} ${H}' width='100%' role='img' aria-label='Ventes et bénéfices par mois'>`+`<path d='M${Pd} ${Y(0)}H${W-Pd}' class='chart-grid'/>`+ln('ca','#6366f1')+ln('b','#10b981')+M.map((m,i)=>`<text x='${X(i)}' y='${H-6}' text-anchor='middle'>${m.l}</text>`).join('')+`</svg><div class='pr'><span style='color:#6366f1'>■</span> Ventes &nbsp; <span style='color:#10b981'>■</span> Bénéfice</div>`}
+ $('c-mois').innerHTML=`<svg viewBox='0 0 ${W} ${H}' width='100%' role='img' aria-label='Ventes et bénéfices par mois'>`+`<path d='M${Pd} ${Y(0)}H${W-Pd}' class='chart-grid'/>`+ln('ca','#417ed4')+ln('b','#10b981')+M.map((m,i)=>`<text x='${X(i)}' y='${H-6}' text-anchor='middle'>${m.l}</text>`).join('')+`</svg><div class='pr'><span style='color:#417ed4'>■</span> Ventes &nbsp; <span style='color:#10b981'>■</span> Bénéfice</div>`}
 const _d3=dash;dash=function(){_d3();const V=workspaceStock().filter(a=>a.statut==='Vendu'),k=document.querySelectorAll('.kpi b'),c0=V.reduce((s,a)=>s+cout(a),0),pos=V.filter(a=>cout(a)>0);if(k[5])k[5].textContent=pos.length?Math.round(pos.reduce((s,a)=>s+a.vendu/cout(a)-1,0)/pos.length*100)+' %':'—';if(k[6]&&c0===0)k[6].textContent=V.length?'Pur bénéfice':'0 %';if(S.mode==='Courbe')courbe();const mz=document.createElement('div');mz.id='mode';mz.className='row';mz.style.marginLeft='8px';$('per').appendChild(mz);chips('mode',['Barres','Courbe'],()=>S.mode,v=>{S.mode=v;dash()})};
 
 /* ---- Comptes et sauvegarde en ligne (Supabase) ---- */
@@ -315,7 +320,7 @@ async function enter(u){if(uid===u.id)return;uid=u.id;usr=u;setSync('Chargement�
 function leave(){uid=null;usr=null;MEM=[];SNAP={};setSync('');dash();stock();authView('login')}
 function say(t,ok){const m=$('am');if(m){m.textContent=t;m.className='em '+(ok?'ok':'')}}
 function authView(v,msg,good){ov.classList.remove('off');const T={login:'Connexion',signup:'Créer un compte',forgot:'Mot de passe oublié',reset:'Nouveau mot de passe',account:'Mon compte'},pw=(id,l,ac)=>`<label>${l}</label><input id='${id}' type='password' autocomplete='${ac}'>`,bt=(id,t,c)=>`<button class='btn ${c||'s'}' id='${id}'>${t}</button>`;
- ov.innerHTML=`<div class='card box'><div class='logo' style='font-size:24px;margin-bottom:8px'><i>◆</i>Fusiona</div><h2>${T[v]}</h2><div id='am' class='em' style='min-height:18px'></div>`+(v==='account'?`<p class='pr'>${esc(usr?usr.email:'')}</p><label>Identifiant</label><input id='au' value='${esc(usr&&usr.user_metadata&&usr.user_metadata.username||'')}'>${bt('b-u','Enregistrer l’identifiant','s p')}<label>Nouvelle adresse e-mail</label><input id='ae' type='email'>${bt('b-e','Changer l’e-mail','s p')}${pw('ap','Nouveau mot de passe','new-password')}${bt('b-p','Changer le mot de passe','s p')}<div>${LEG.length?bt('b-i','Importer les '+LEG.length+' articles de cet appareil'):''}${bt('b-o','Se déconnecter')}${bt('b-g','Déconnecter tous mes appareils')}${bt('b-c','Fermer','')}</div>`:`${v==='signup'?`<label>Identifiant (facultatif)</label><input id='au' autocomplete='username'>`:''}${v!=='reset'?`<label>Adresse e-mail</label><input id='ae' type='email' autocomplete='email'>`:''}${v!=='forgot'?pw('ap',v==='login'?'Mot de passe':'Mot de passe (8 caractères minimum)',v==='login'?'current-password':'new-password'):''}${v==='signup'?pw('ap2','Confirmer le mot de passe','new-password'):''}${v!=='forgot'?`<label style='text-transform:none;letter-spacing:0'><input id='sh' type='checkbox' style='width:auto;margin-right:6px'>Afficher le mot de passe</label>`:''}${v==='login'?`<label style='text-transform:none;letter-spacing:0'><input id='rm' type='checkbox' style='width:auto;margin-right:6px' checked>Rester connecté</label>`:''}${bt('b-ok',{login:'Se connecter',signup:'Créer mon compte',forgot:'Envoyer le lien',reset:'Enregistrer'}[v],'')}`)+(v==='login'?`<div><button class='lk' data-v='forgot'>Mot de passe oublié ?</button> · <button class='lk' data-v='signup'>Créer un compte</button></div>`:v==='signup'||v==='forgot'?`<div><button class='lk' data-v='login'>J’ai déjà un compte</button></div>`:'')+`</div>`;
+ ov.innerHTML=`<div class='card box'><div class='logo' style='font-size:24px;margin-bottom:8px'><img class="jugo-logo" src="jugo-logo.png" alt="Jugo"></div><h2>${T[v]}</h2><div id='am' class='em' style='min-height:18px'></div>`+(v==='account'?`<p class='pr'>${esc(usr?usr.email:'')}</p><label>Identifiant</label><input id='au' value='${esc(usr&&usr.user_metadata&&usr.user_metadata.username||'')}'>${bt('b-u','Enregistrer l’identifiant','s p')}<label>Nouvelle adresse e-mail</label><input id='ae' type='email'>${bt('b-e','Changer l’e-mail','s p')}${pw('ap','Nouveau mot de passe','new-password')}${bt('b-p','Changer le mot de passe','s p')}<div>${LEG.length?bt('b-i','Importer les '+LEG.length+' articles de cet appareil'):''}${bt('b-o','Se déconnecter')}${bt('b-g','Déconnecter tous mes appareils')}${bt('b-c','Fermer','')}</div>`:`${v==='signup'?`<label>Identifiant (facultatif)</label><input id='au' autocomplete='username'>`:''}${v!=='reset'?`<label>Adresse e-mail</label><input id='ae' type='email' autocomplete='email'>`:''}${v!=='forgot'?pw('ap',v==='login'?'Mot de passe':'Mot de passe (8 caractères minimum)',v==='login'?'current-password':'new-password'):''}${v==='signup'?pw('ap2','Confirmer le mot de passe','new-password'):''}${v!=='forgot'?`<label style='text-transform:none;letter-spacing:0'><input id='sh' type='checkbox' style='width:auto;margin-right:6px'>Afficher le mot de passe</label>`:''}${v==='login'?`<label style='text-transform:none;letter-spacing:0'><input id='rm' type='checkbox' style='width:auto;margin-right:6px' checked>Rester connecté</label>`:''}${bt('b-ok',{login:'Se connecter',signup:'Créer mon compte',forgot:'Envoyer le lien',reset:'Enregistrer'}[v],'')}`)+(v==='login'?`<div><button class='lk' data-v='forgot'>Mot de passe oublié ?</button> · <button class='lk' data-v='signup'>Créer un compte</button></div>`:v==='signup'||v==='forgot'?`<div><button class='lk' data-v='login'>J’ai déjà un compte</button></div>`:'')+`</div>`;
  if(msg)say(msg,good);ov.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>authView(b.dataset.v));
  const sh=$('sh');if(sh)sh.onchange=()=>['ap','ap2'].forEach(i=>$(i)&&($(i).type=sh.checked?'text':'password'));
  ov.onkeydown=e=>{if(e.key==='Enter'&&$('b-ok'))$('b-ok').click()};if($('b-ok'))$('b-ok').onclick=()=>authDo(v);
@@ -413,7 +418,7 @@ go=function(p){
   if(p==='verdict')verdict();
   if(entering)animateData(p);
 };
-const HERO={watch:['Dans le viseur','Compare tes prochains achats avant de les ajouter au stock.'],dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
+const HERO={watch:['Tableau','Compare tes prochains achats avant de les ajouter au stock.'],dash:['Tableau de bord','Ta performance en un coup d’œil'],today:['Aujourd’hui','Ce qui demande ton attention'],verdict:['Verdict d’achat','Faut-il acheter à ce prix ?'],new:['Nouvel article','Ajoute ton article et prépare l’annonce'],stock:['Mon stock','Tout ce que tu as en vente'],budget:['Budget','Ton porte-monnaie et tes dépenses']};
 document.querySelectorAll('.pg').forEach(s=>{const h=HERO[s.id.slice(2)];if(h){const d=document.createElement('div');d.className='hero';d.innerHTML=`<h1>${h[0]}</h1><p>${h[1]}</p>`;s.prepend(d)}});
 document.body.dataset.pg='dash';
 async function loadBud(){
@@ -563,7 +568,7 @@ function overview(articles) {
   svg.onfocus=()=>select(selected); svg.onblur=hide;
   svg.onkeydown=e=>{ if (['ArrowLeft','ArrowRight'].includes(e.key)) { e.preventDefault(); select(selected+(e.key==='ArrowRight'?1:-1)); } };
   $('volume-period').onchange=()=>{stopCounters();overview(workspaceStock());animateData('dash');};
-  const colors=['#8494ad','#7153ed','#41a2cd','#48aba2'];
+  const colors=['#8494ad','#397ad1','#41a2cd','#48aba2'];
   $('overview-stock').innerHTML='<div class="status-track">'+counts.map((n,i)=>`<i style="width:${100*n/(articles.length||1)}%;background:${colors[i]}"></i>`).join('')+'</div>'+statuses.map((s,i)=>`<p><i style="background:${colors[i]}"></i>${s}<b>${counts[i]}</b></p>`).join('');
 }
 dash();

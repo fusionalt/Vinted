@@ -179,14 +179,14 @@ input, textarea { background: var(--s); }
 .team-line span{font-size:13px;color:var(--m)}.team-line>button{justify-self:start}
 @media(max-width:760px){.team-grid{grid-template-columns:minmax(0,1fr)}.workspace-bar{flex-wrap:wrap;gap:0;padding-bottom:10px}.workspace-bar .stock-link{flex-basis:100%}}
 *,*::before,*::after{animation:none!important;transition:none;scroll-behavior:auto!important}
-:where(html[data-motion="on"]) .btn,:where(html[data-motion="on"]) .chip,:where(html[data-motion="on"]) nav button,:where(html[data-motion="on"]) #team-switch button,:where(html[data-motion="on"]) .drop,:where(html[data-motion="on"]) input,:where(html[data-motion="on"]) select{transition:background-color .15s,color .15s,border-color .15s,box-shadow .15s}
-:where(html[data-motion="on"]) .it .ph img{transition:transform .22s ease-out}
+:where(html[data-motion="on"]) .btn,:where(html[data-motion="on"]) .chip,:where(html[data-motion="on"]) nav button,:where(html[data-motion="on"]) #team-switch button,:where(html[data-motion="on"]) .drop,:where(html[data-motion="on"]) input,:where(html[data-motion="on"]) select{transition:background-color .28s,color .28s,border-color .28s,box-shadow .28s}
+:where(html[data-motion="on"]) .it .ph img{transition:transform .44s ease-out}
 :where(html[data-motion="on"]) .it:hover .ph img{transform:scale(1.025)!important}
-:where(html[data-motion="on"]) #toast{transition:opacity .16s,transform .16s}
-:where(html[data-motion="on"]) .hb i,:where(html[data-motion="on"]) .bar i,:where(html[data-motion="on"]) #obj-b{transition:width .35s ease-out}
+:where(html[data-motion="on"]) #toast{transition:opacity .32s,transform .32s}
+:where(html[data-motion="on"]) .hb i,:where(html[data-motion="on"]) .bar i,:where(html[data-motion="on"]) #obj-b{transition:width .65s ease-out}
 :where(html[data-motion="on"]) .chip:active,:where(html[data-motion="on"]) .btn:active{transform:scale(.98)!important}
-:where(html[data-motion="on"]) .btn,:where(html[data-motion="on"]) .chip{transition:transform .12s,background-color .15s,color .15s}
-:where(html[data-motion="on"]) .chip.on:focus{animation:select-chip .18s ease-out!important}
+:where(html[data-motion="on"]) .btn,:where(html[data-motion="on"]) .chip{transition:transform .24s,background-color .28s,color .28s}
+:where(html[data-motion="on"]) .chip.on:focus{animation:select-chip .36s ease-out!important}
 header .ic[aria-pressed="true"]{background:var(--active);color:var(--accent);border-color:var(--accent)}
 @keyframes select-chip{from{box-shadow:0 0 0 3px var(--active)}to{box-shadow:0 0 0 0 transparent}}
 #p-new{max-width:1120px}.entry-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(235px,1fr);gap:20px;align-items:start}
@@ -270,4 +270,42 @@ header .ic[aria-pressed="true"]{background:var(--active);color:var(--accent);bor
 .watch-banner,.watch-entry{margin-bottom:16px}.watch-banner strong{display:block;font-size:clamp(20px,3vw,30px);margin-top:6px}.watch-banner>div{flex:1;min-width:150px}
 .watch-entry summary{cursor:pointer;font-weight:650}.watch-entry form{margin-top:18px;gap:12px}.watch-entry label{flex:1 1 155px}.watch-entry input,.watch-entry select{display:block;margin-top:5px;width:100%}
 #watch-list{overflow:auto;margin-top:16px}#watch-list table{width:100%;border-collapse:collapse}#watch-list :is(th,td){padding:12px 8px;text-align:left;border-bottom:1px solid var(--l)}#watch-list th,#watch-list small{font-size:.78rem;color:var(--m)}#watch-list small{display:block;margin-top:4px}.watch-priority span{font-weight:700;color:var(--t);background:var(--s2);padding:4px 8px;border-radius:6px}
-@media(max-width:850px){#watch-list thead{display:none}#watch-list table,#watch-list tbody{display:block}#watch-list tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 0;border-bottom:1px solid var(--l)}#watch-list td{display:block;border:0}#watch-list td::before{content:attr(data-label);display:block;font-size:.75rem;color:var(--m)}#watch-list td:first-child{grid-column:1/-1;font-weight:700}.watch-entry form label{min-width:0}}
+:root {
+  --bg:#0d1725; --s:#152235; --s2:#1d3048; --rail:#101e30; --l:#334760;
+  --t:#eef4fc; --m:#b1c0d2; --accent:#98c4ff; --active:#213e64;
+  --b:#a8ceff; --bt:#102643; --ok:#71d7b5; --bad:#ff9e92;
+}
+[data-theme=clair] {
+  --bg:#f2f5f9; --s:#fff; --s2:#ebf1f8; --rail:#f8fafd; --l:#ced9e7;
+  --t:#142940; --m:#526980; --accent:#164f99; --active:#dceafa;
+  --b:#174c91; --bt:white; --ok:#087457; --bad:#ac4035;
+}
+.logo .jugo-logo{display:block;width:118px;height:40px;object-fit:contain;background:white;border-radius:7px}
+#n-watch::before{content:"▤"}
+.watch-banner{background:var(--s);border-left:4px solid var(--accent);align-items:center}
+#watch-balance{color:var(--accent);font-variant-numeric:tabular-nums}
+.watch-entry form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:end}
+.watch-entry form>label:first-child{grid-column:span 2}
+.watch-entry .watch-kind{grid-row:2;grid-column:1/-1;margin:0;padding:0;border:0;min-width:0}
+.watch-kind legend{font-size:.78rem;color:var(--m);margin-bottom:6px}
+.watch-kind label{display:inline-block;position:relative;margin:3px 5px 3px 0;cursor:pointer;text-transform:none;letter-spacing:0}
+.watch-kind input{position:absolute;opacity:0;width:1px;height:1px}
+.watch-kind span{display:block;border:1px solid var(--l);padding:8px 12px;border-radius:8px;font-size:.85rem}
+.watch-kind input:checked+span{background:var(--active);color:var(--accent);border-color:var(--accent)}
+.watch-kind input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.watch-entry select{appearance:auto;padding:10px;border:1px solid var(--l);border-radius:8px;background:var(--s);color:var(--t);font:inherit;min-height:42px}
+#watch-list{border:1px solid var(--l);border-radius:10px;max-width:100%;isolation:isolate}
+#watch-list table{min-width:850px;font-size:.89rem;font-variant-numeric:tabular-nums}
+#watch-list th{background:var(--s2);font-weight:650;white-space:nowrap}
+#watch-list td{background:var(--s);vertical-align:middle}
+#watch-list tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--s2) 42%,var(--s))}
+#watch-list td:first-child:not([colspan]),#watch-list th:first-child{position:sticky;left:0;min-width:130px;max-width:230px;overflow-wrap:anywhere;font-weight:650;box-shadow:1px 0 var(--l)}
+#watch-list :is(td,th):nth-child(n+2):nth-child(-n+5){text-align:right;white-space:nowrap}
+#watch-list .watch-empty{padding:34px 16px;color:var(--m)}
+#watch-list .watch-priority span{color:var(--accent);background:var(--active);white-space:nowrap}
+@media(max-width:720px){
+  .watch-entry form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .watch-kind span{padding:8px}.logo .jugo-logo{width:89px;height:30px}
+  #watch-list .watch-empty{text-align:left;white-space:normal}
+  #watch-list .watch-empty span{display:block;max-width:230px}
+}

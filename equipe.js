@@ -247,7 +247,7 @@ const enterGuestTeam=guest;
 guest=function(){enterGuestTeam();teamConnect();};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){teamConnect();teamRefresh();}});
 setInterval(()=>{if(!document.hidden){teamConnect();teamRefresh();}},15000);
-const watchNav = teamNode('button','Dans le viseur');
+const watchNav = teamNode('button','Tableau');
 watchNav.id = 'n-watch';
 watchNav.onclick = () => go('watch');
 navEl.append(watchNav);
@@ -294,16 +294,24 @@ function drawWatch() {
   const first = rows.find(x => x.priority === 1);
   $('watch-first').textContent = budgetKnown ? (first?.label || 'Aucun achat prioritaire') : 'Budget à synchroniser';
   const list = $('watch-list');
+  const signature = JSON.stringify([teamMember,ready,budgetKnown,rows]);
+  if(list.dataset.signature === signature) return;
+  list.dataset.signature = signature;
   list.replaceChildren();
-  if (!rows.length) {
-    list.append(teamNode('p',ready ? 'Aucun article à surveiller dans cet espace.' : 'Chargement des articles…'));
-    return;
-  }
   const table = document.createElement('table');
   const headers = ['Article','Achat','Revente','Gain estimé','Rendement','Saison d’achat','Décision',''];
   const header = table.createTHead().insertRow();
-  for (const title of headers) header.append(teamNode('th',title));
+  for (const title of headers) {
+    const th = teamNode('th',title || 'Action');
+    th.scope = 'col'; header.append(th);
+  }
   const body = table.createTBody();
+  if(!rows.length) {
+    const cell = body.insertRow().insertCell();
+    cell.colSpan = headers.length;
+    cell.className = 'watch-empty';
+    cell.textContent = ready ? 'Ajoute ton premier article pour comparer son prix et sa rentabilité.' : 'Chargement des articles…';
+  }
   for (const item of rows) {
     const tr = body.insertRow();
     const seasons = watchSeasons[item.kind] || watchSeasons['Toutes saisons'];
@@ -332,5 +340,5 @@ $('watch-form').onsubmit = event => {
   if (!label || (uid && !BLOADED)) return;
   BUD.viseur.push({id:crypto.randomUUID(),member:teamMember || form.elements.member.value,label,kind:form.elements.kind.value,
     buy:Math.round(form.elements.buy.valueAsNumber*100),sell:Math.round(form.elements.sell.valueAsNumber*100)});
-  bsave(); form.reset(); drawWatch();
+  bsave(); form.reset(); drawWatch(); animateData("watch");
 };

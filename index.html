@@ -3,19 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fusiona</title>
+<title>Jugo</title>
+<link rel="icon" href="jugo-icon.png"><link rel="apple-touch-icon" href="jugo-icon.png">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Fusiona">
-<meta name="theme-color" content="#6348cf">
-<link rel="stylesheet" href="style.css?v=viseur-1">
-<link rel="stylesheet" href="dashboard.css?v=viseur-1">
+<meta name="apple-mobile-web-app-title" content="Jugo">
+<meta name="theme-color" content="#103977">
+<link rel="stylesheet" href="style.css?v=jugo-1">
+<link rel="stylesheet" href="dashboard.css?v=jugo-1">
 <script>if (localStorage.getItem('fusiona-theme') !== 'sombre') document.documentElement.dataset.theme = 'clair';</script>
 </head>
 <body>
 <header>
   <button id="nav-toggle" type="button" aria-expanded="false" aria-controls="main-nav nav-tools">☰ Menu</button>
-  <div class="logo"><i>◆</i>Fusiona</div>
+  <div class="logo"><img class="jugo-logo" src="jugo-logo.png" alt="Jugo"></div>
   <nav id="main-nav" aria-label="Navigation principale">
     <button id="n-dash" class="on" onclick="go('dash')">Tableau de bord</button>
     <button id="n-new" onclick="go('new')">Nouvel article</button>
@@ -29,15 +30,15 @@
 
 <section class="pg" id="p-watch">
   <div class="card watch-banner"><div><span class="lb">Budget disponible</span><strong id="watch-balance"></strong></div><div><span class="lb">Acheter en priorité</span><strong id="watch-first"></strong></div></div>
-  <details class="card watch-entry"><summary>Ajouter un article à surveiller</summary>
+  <details class="card watch-entry"><summary>Ajouter un article</summary>
     <form id="watch-form"><label>Article<input name="article" maxlength="120" required placeholder="Polaire Patagonia, taille M"></label>
-    <label>Type<select name="kind"><option>Mi-saison</option><option>Manteau ou maille chaude</option><option>Tenue d’été</option><option>Toutes saisons</option></select></label>
+    <fieldset class="watch-kind"><legend>Saisonnalité de l’article</legend><label><input type="radio" name="kind" value="Mi-saison" checked><span>Mi-saison</span></label><label><input type="radio" name="kind" value="Manteau ou maille chaude"><span>Hiver · manteaux, mailles</span></label><label><input type="radio" name="kind" value="Tenue d’été"><span>Été · tenues légères</span></label><label><input type="radio" name="kind" value="Toutes saisons"><span>Toute l’année</span></label></fieldset>
     <label>Coût d’achat, frais inclus (€)<input name="buy" type="number" min="0" max="9999999" step=".01" required></label>
     <label>Revente visée (€)<input name="sell" type="number" min=".01" max="9999999" step=".01" required></label>
     <label>Espace<select name="member"><option value="">En commun</option><option>Gatien</option><option>Jules</option></select></label>
-    <button class="btn" type="submit">Ajouter au viseur</button></form></details>
+    <button class="btn" type="submit">Ajouter au tableau</button></form></details>
   <div class="card"><h2>Ordre d’achat</h2><p class="note">Le classement privilégie les achats finançables, puis le gain estimé par euro investi. Les saisons sont des repères indicatifs pour la France.</p>
-  <div id="watch-list"></div></div>
+  <div id="watch-list" tabindex="0" role="region" aria-label="Tableau des achats à comparer"></div></div>
 </section>
 <section class="pg on" id="p-dash">
   <section class="activity-chart" aria-label="Ventes cumulées par heure">
@@ -166,7 +167,7 @@
   <div class="preview-metric"><span>Bénéfice réalisé</span><b id="sale-profit"></b></div>
   <button class="btn">Confirmer la vente</button><button class="btn s" type="button" onclick="document.getElementById('sale-dialog').close()">Annuler</button>
 </form></dialog>
-<script src="app.js?v=viseur-1"></script>
-<script src="equipe.js?v=viseur-1"></script>
+<script src="app.js?v=jugo-1"></script>
+<script src="equipe.js?v=jugo-1"></script>
 </body>
 </html>
